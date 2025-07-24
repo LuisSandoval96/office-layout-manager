@@ -580,7 +580,59 @@ export class FirebaseDatabaseManager {
 
   // Método para limpiar todos los datos
   public async clearAllData(): Promise<void> {
-    this.state = this.createInitialState();
-    await this.saveToFirebase();
+    try {
+      console.log('Clearing all data and resetting layout...');
+      
+      // Recrear estado con layout correcto
+      this.state = this.createInitialState();
+      
+      // Verificar que el layout tiene los nombres correctos
+      const samplePositions = this.state.layout.positions.slice(0, 5);
+      console.log('First 5 positions after reset:', samplePositions.map(p => ({ name: p.deskName, id: p.id })));
+      
+      // Forzar guardado completo en Firebase (usar setDoc en lugar de updateDoc)
+      const docRef = doc(db, COLLECTION_NAME, DOCUMENT_ID);
+      const firebaseData = this.convertStateToFirebase(this.state);
+      
+      await setDoc(docRef, firebaseData);
+      console.log('Layout reset completed successfully');
+      
+      this.notifyListeners();
+    } catch (error) {
+      console.error('Error clearing all data:', error);
+      throw error;
+    }
+  }
+
+  // Función especial para forzar reset del layout sin perder empleados
+  public async forceResetLayout(): Promise<void> {
+    try {
+      console.log('Force resetting layout to original names (keeping employees)...');
+      
+      // Mantener empleados actuales pero regenerar layout
+      const currentEmployees = [...this.state.employees];
+      
+      // Recrear estado con layout correcto
+      this.state = this.createInitialState();
+      
+      // Restaurar empleados
+      this.state.employees = currentEmployees;
+      
+      // Verificar que el layout tiene los nombres correctos
+      const samplePositions = this.state.layout.positions.slice(0, 5);
+      console.log('First 5 positions after layout reset:', samplePositions.map(p => ({ name: p.deskName, id: p.id })));
+      
+      // Forzar guardado en Firebase
+      const docRef = doc(db, COLLECTION_NAME, DOCUMENT_ID);
+      const firebaseData = this.convertStateToFirebase(this.state);
+      
+      await setDoc(docRef, firebaseData);
+      console.log('Layout force reset completed successfully');
+      
+      this.notifyListeners();
+    } catch (error) {
+      console.error('Error force resetting layout:', error);
+      throw error;
+    }
   }
 }

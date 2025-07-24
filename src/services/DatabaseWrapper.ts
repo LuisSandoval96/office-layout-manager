@@ -35,6 +35,7 @@ interface IDatabaseManager {
   // Métodos adicionales
   getStatistics(): any;
   clearAllData(): Promise<void>;
+  forceResetLayout?(): Promise<void>; // Método opcional para Firebase
   
   subscribe(listener: (state: ApplicationState) => void): () => void;
   exportData(): ApplicationState;
@@ -138,6 +139,14 @@ class DatabaseManagerWrapper implements IDatabaseManager {
 
   async clearAllData(): Promise<void> {
     return this.manager.clearAllData();
+  }
+
+  async forceResetLayout(): Promise<void> {
+    if ('forceResetLayout' in this.manager && typeof this.manager.forceResetLayout === 'function') {
+      return this.manager.forceResetLayout();
+    } else {
+      throw new Error('forceResetLayout not available in current database manager');
+    }
   }
 }
 

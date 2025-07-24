@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { BarChart3, Users, MapPin, TrendingUp, Download, Upload, Trash2 } from 'lucide-react';
+import { BarChart3, Users, MapPin, TrendingUp, Download, Upload, Trash2, RefreshCw } from 'lucide-react';
 import getDatabaseManager from '../services/DatabaseWrapper';
 import './Statistics.css';
 
@@ -94,6 +94,21 @@ export function Statistics() {
     }
   };
 
+  const handleResetLayout = async () => {
+    if (confirm('¿Resetear el layout a los nombres originales (K1, K2, L1, L2, SA, NA)? Esto mantendrá los empleados.')) {
+      try {
+        await db.forceResetLayout();
+        loadStatistics();
+        alert('Layout reseteado exitosamente con nombres originales');
+        // Recargar la página para aplicar el nuevo layout
+        window.location.reload();
+      } catch (error) {
+        alert('Error al resetear layout. Verifique la consola.');
+        console.error('Error resetting layout:', error);
+      }
+    }
+  };
+
   const handleRegenerateLayout = () => {
     if (confirm('¿Regenerar el layout con el diseño personalizado? Esto mantendrá los empleados pero recreará las posiciones.')) {
       // Limpiar localStorage para forzar regeneración
@@ -128,6 +143,10 @@ export function Statistics() {
           </label>
           <button className="regenerate-button" onClick={handleRegenerateLayout}>
             🔄 Regenerar Layout
+          </button>
+          <button className="regenerate-button" onClick={handleResetLayout}>
+            <RefreshCw size={16} />
+            Resetear Layout Original
           </button>
           <button className="danger-button" onClick={handleClearData}>
             <Trash2 size={16} />
