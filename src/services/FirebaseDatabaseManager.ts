@@ -150,95 +150,161 @@ export class FirebaseDatabaseManager {
     const positions: OfficePosition[] = [];
     const deskSize = 80;
 
-    // Definición de posiciones específicas del layout
+    // Definir todas las posiciones del layout con sus coordenadas específicas y más espaciadas
     const layoutPositions = [
-      // Fila superior (escritorios 1-8)
-      { x: 50, y: 50, number: 1, deskName: "Desk 1" },
-      { x: 150, y: 50, number: 2, deskName: "Desk 2" },
-      { x: 250, y: 50, number: 3, deskName: "Desk 3" },
-      { x: 350, y: 50, number: 4, deskName: "Desk 4" },
-      { x: 450, y: 50, number: 5, deskName: "Desk 5" },
-      { x: 550, y: 50, number: 6, deskName: "Desk 6" },
-      { x: 650, y: 50, number: 7, deskName: "Desk 7" },
-      { x: 750, y: 50, number: 8, deskName: "Desk 8" },
+      // Lado izquierdo superior
+      { name: 'K1', x: 50, y: 50 },
+      { name: 'K2', x: 150, y: 50 },
+      { name: 'K7', x: 50, y: 150 },
+      { name: 'K9', x: 150, y: 150 },
 
-      // Escritorios centrales lado izquierdo (9-16)
-      { x: 50, y: 200, number: 9, deskName: "Desk 9" },
-      { x: 50, y: 300, number: 10, deskName: "Desk 10" },
-      { x: 50, y: 400, number: 11, deskName: "Desk 11" },
-      { x: 50, y: 500, number: 12, deskName: "Desk 12" },
-      { x: 50, y: 600, number: 13, deskName: "Desk 13" },
-      { x: 50, y: 700, number: 14, deskName: "Desk 14" },
-      { x: 50, y: 800, number: 15, deskName: "Desk 15" },
-      { x: 50, y: 900, number: 16, deskName: "Desk 16" },
+      // Lado izquierdo medio-superior
+      { name: 'L2', x: 50, y: 280 },
+      { name: 'L1', x: 150, y: 280 },
+      { name: 'L7', x: 50, y: 380 },
+      { name: 'L8', x: 150, y: 380 },
 
-      // Escritorios centrales lado derecho (17-24)
-      { x: 750, y: 200, number: 17, deskName: "Desk 17" },
-      { x: 750, y: 300, number: 18, deskName: "Desk 18" },
-      { x: 750, y: 400, number: 19, deskName: "Desk 19" },
-      { x: 750, y: 500, number: 20, deskName: "Desk 20" },
-      { x: 750, y: 600, number: 21, deskName: "Desk 21" },
-      { x: 750, y: 700, number: 22, deskName: "Desk 22" },
-      { x: 750, y: 800, number: 23, deskName: "Desk 23" },
-      { x: 750, y: 900, number: 24, deskName: "Desk 24" },
+      // Lado izquierdo medio
+      { name: 'M2', x: 50, y: 510 },
+      { name: 'M1', x: 150, y: 510 },
+      { name: 'M5', x: 50, y: 610 },
+      { name: 'M6', x: 150, y: 610 },
 
-      // Área central - isla de escritorios (25-32)
-      { x: 300, y: 350, number: 25, deskName: "Desk 25" },
-      { x: 400, y: 350, number: 26, deskName: "Desk 26" },
-      { x: 500, y: 350, number: 27, deskName: "Desk 27" },
-      { x: 300, y: 450, number: 28, deskName: "Desk 28" },
-      { x: 400, y: 450, number: 29, deskName: "Desk 29" },
-      { x: 500, y: 450, number: 30, deskName: "Desk 30" },
-      { x: 350, y: 550, number: 31, deskName: "Desk 31" },
-      { x: 450, y: 550, number: 32, deskName: "Desk 32" },
+      // Lado izquierdo inferior (3 columnas)
+      { name: 'N3', x: 50, y: 740 },
+      { name: 'N2', x: 150, y: 740 },
+      { name: 'N1', x: 250, y: 740 },
+      { name: 'N14', x: 50, y: 840 },
+      { name: 'N15', x: 150, y: 840 },
+      { name: 'N16', x: 250, y: 840 },
 
-      // Área inferior - escritorios en L (33-40)
-      { x: 150, y: 1100, number: 33, deskName: "Desk 33" },
-      { x: 250, y: 1100, number: 34, deskName: "Desk 34" },
-      { x: 350, y: 1100, number: 35, deskName: "Desk 35" },
-      { x: 450, y: 1100, number: 36, deskName: "Desk 36" },
-      { x: 550, y: 1100, number: 37, deskName: "Desk 37" },
-      { x: 650, y: 1100, number: 38, deskName: "Desk 38" },
-      { x: 150, y: 1200, number: 39, deskName: "Desk 39" },
-      { x: 650, y: 1200, number: 40, deskName: "Desk 40" },
+      // Lado izquierdo más abajo (3 columnas)
+      { name: 'O3', x: 50, y: 970 },
+      { name: 'O2', x: 150, y: 970 },
+      { name: 'O1', x: 250, y: 970 },
+      { name: 'O12', x: 50, y: 1070 },
+      { name: 'O13', x: 150, y: 1070 },
+      { name: 'O14', x: 250, y: 1070 },
 
-      // Escritorios adicionales parte inferior (41-50)
-      { x: 50, y: 1350, number: 41, deskName: "Desk 41" },
-      { x: 150, y: 1350, number: 42, deskName: "Desk 42" },
-      { x: 250, y: 1350, number: 43, deskName: "Desk 43" },
-      { x: 350, y: 1350, number: 44, deskName: "Desk 44" },
-      { x: 450, y: 1350, number: 45, deskName: "Desk 45" },
-      { x: 550, y: 1350, number: 46, deskName: "Desk 46" },
-      { x: 650, y: 1350, number: 47, deskName: "Desk 47" },
-      { x: 750, y: 1350, number: 48, deskName: "Desk 48" },
-      { x: 300, y: 1450, number: 49, deskName: "Desk 49" },
-      { x: 500, y: 1450, number: 50, deskName: "Desk 50" },
+      // Lado izquierdo inferior final (3 columnas)
+      { name: 'P3', x: 50, y: 1200 },
+      { name: 'P2', x: 150, y: 1200 },
+      { name: 'P1', x: 250, y: 1200 },
+      { name: 'P14', x: 50, y: 1300 },
+      { name: 'P15', x: 150, y: 1300 },
+      { name: 'P16', x: 250, y: 1300 },
 
-      // Escritorios finales (51-60)
-      { x: 100, y: 1600, number: 51, deskName: "Desk 51" },
-      { x: 200, y: 1600, number: 52, deskName: "Desk 52" },
-      { x: 300, y: 1600, number: 53, deskName: "Desk 53" },
-      { x: 400, y: 1600, number: 54, deskName: "Desk 54" },
-      { x: 500, y: 1600, number: 55, deskName: "Desk 55" },
-      { x: 600, y: 1600, number: 56, deskName: "Desk 56" },
-      { x: 700, y: 1600, number: 57, deskName: "Desk 57" },
-      { x: 250, y: 1700, number: 58, deskName: "Desk 58" },
-      { x: 400, y: 1700, number: 59, deskName: "Desk 59" },
-      { x: 550, y: 1700, number: 60, deskName: "Desk 60" },
+      // Lado izquierdo final (3 columnas)
+      { name: 'Q3', x: 50, y: 1430 },
+      { name: 'Q2', x: 150, y: 1430 },
+      { name: 'Q1', x: 250, y: 1430 },
+      { name: 'Q14', x: 50, y: 1530 },
+      { name: 'Q15', x: 150, y: 1530 },
+      { name: 'Q16', x: 250, y: 1530 },
+
+      // Centro superior - Salas (más grandes y centradas)
+      { name: 'SA', x: 450, y: 200, width: 120, height: 60 },
+      { name: 'NA', x: 650, y: 200, width: 120, height: 60 },
+
+      // Centro - Bloque N4-N6 (3 columnas centradas)
+      { name: 'N4', x: 430, y: 350 },
+      { name: 'N5', x: 530, y: 350 },
+      { name: 'N6', x: 630, y: 350 },
+      { name: 'N13', x: 430, y: 450 },
+      { name: 'N12', x: 530, y: 450 },
+      { name: 'N11', x: 630, y: 450 },
+
+      // Centro - Bloque O4-O5 (2 columnas centradas)
+      { name: 'O4', x: 480, y: 580 },
+      { name: 'O5', x: 580, y: 580 },
+      { name: 'O11', x: 480, y: 680 },
+      { name: 'O10', x: 580, y: 680 },
+
+      // Centro - Bloque P4-P6 (3 columnas)
+      { name: 'P4', x: 430, y: 810 },
+      { name: 'P5', x: 530, y: 810 },
+      { name: 'P6', x: 630, y: 810 },
+      { name: 'P13', x: 430, y: 910 },
+      { name: 'P12', x: 530, y: 910 },
+      { name: 'P11', x: 630, y: 910 },
+
+      // Centro - Bloque Q4-Q6 (3 columnas)
+      { name: 'Q4', x: 430, y: 1040 },
+      { name: 'Q5', x: 530, y: 1040 },
+      { name: 'Q6', x: 630, y: 1040 },
+      { name: 'Q13', x: 430, y: 1140 },
+      { name: 'Q12', x: 530, y: 1140 },
+      { name: 'Q11', x: 630, y: 1140 },
+
+      // Centro - Bloque R1-R4 (3 columnas)
+      { name: 'R1', x: 430, y: 1270 },
+      { name: 'R3', x: 530, y: 1270 },
+      { name: 'R4', x: 630, y: 1270 },
+      { name: 'R2', x: 430, y: 1370 },
+      { name: 'R10', x: 530, y: 1370 },
+      { name: 'R9', x: 630, y: 1370 },
+
+      // Lado derecho superior
+      { name: 'K3', x: 900, y: 50 },
+      { name: 'K4', x: 1000, y: 50 },
+      { name: 'K6', x: 900, y: 150 },
+      { name: 'K5', x: 1000, y: 150 },
+
+      // Lado derecho medio-superior
+      { name: 'L3', x: 900, y: 280 },
+      { name: 'L4', x: 1000, y: 280 },
+      { name: 'L6', x: 900, y: 380 },
+      { name: 'L5', x: 1000, y: 380 },
+
+      // Lado derecho medio
+      { name: 'M3', x: 900, y: 510 },
+      { name: 'M4', x: 1000, y: 510 },
+      { name: 'M7', x: 900, y: 610 },
+      { name: 'M8', x: 1000, y: 610 },
+
+      // Lado derecho medio-inferior
+      { name: 'N7', x: 900, y: 740 },
+      { name: 'N8', x: 1000, y: 740 },
+      { name: 'N10', x: 900, y: 840 },
+      { name: 'N9', x: 1000, y: 840 },
+
+      // Lado derecho inferior
+      { name: 'O6', x: 900, y: 970 },
+      { name: 'O7', x: 1000, y: 970 },
+      { name: 'O9', x: 900, y: 1070 },
+      { name: 'O8', x: 1000, y: 1070 },
+
+      // Lado derecho más abajo
+      { name: 'P7', x: 900, y: 1200 },
+      { name: 'P8', x: 1000, y: 1200 },
+      { name: 'P10', x: 900, y: 1300 },
+      { name: 'P9', x: 1000, y: 1300 },
+
+      // Lado derecho final
+      { name: 'Q7', x: 900, y: 1430 },
+      { name: 'Q8', x: 1000, y: 1430 },
+      { name: 'Q10', x: 900, y: 1530 },
+      { name: 'Q9', x: 1000, y: 1530 },
+
+      // Lado derecho último
+      { name: 'R5', x: 900, y: 1660 },
+      { name: 'R6', x: 1000, y: 1660 },
+      { name: 'R8', x: 900, y: 1760 },
+      { name: 'R7', x: 1000, y: 1760 }
     ];
 
-    layoutPositions.forEach(pos => {
+    // Crear las posiciones con las coordenadas específicas
+    layoutPositions.forEach((pos, index) => {
       positions.push({
-        id: `pos-${pos.number}`,
+        id: `pos-${pos.name}`,
+        number: index + 1,
         x: pos.x,
         y: pos.y,
-        width: deskSize,
-        height: deskSize,
-        number: pos.number,
-        deskName: pos.deskName,
+        width: pos.width || deskSize,
+        height: pos.height || deskSize,
         employeeId: null,
-        isOccupied: false
-        // workstationInfo se omite cuando es undefined
+        isOccupied: false,
+        deskName: pos.name
       });
     });
 
