@@ -1,0 +1,157 @@
+import { useState } from 'react';
+import type { WorkstationInfo } from '../types/database';
+import './WorkstationInfoModal.css';
+
+interface WorkstationInfoModalProps {
+  isOpen: boolean;
+  deskName: string;
+  employeeName: string;
+  onConfirm: (workstationInfo: WorkstationInfo) => void;
+  onCancel: () => void;
+}
+
+export function WorkstationInfoModal({ 
+  isOpen, 
+  deskName, 
+  employeeName, 
+  onConfirm, 
+  onCancel 
+}: WorkstationInfoModalProps) {
+  const [drawerNumber, setDrawerNumber] = useState('');
+  const [chairNumber, setChairNumber] = useState('');
+  const [nodesWorking, setNodesWorking] = useState(true);
+  const [electricalConnection, setElectricalConnection] = useState(true);
+  const [drawerWorking, setDrawerWorking] = useState(true);
+  const [notes, setNotes] = useState('');
+
+  if (!isOpen) return null;
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    const workstationInfo: WorkstationInfo = {
+      drawerNumber: drawerNumber.trim() || undefined,
+      chairNumber: chairNumber.trim() || undefined,
+      nodesWorking,
+      electricalConnection,
+      drawerWorking,
+      assignedDate: new Date(),
+      notes: notes.trim() || undefined
+    };
+
+    onConfirm(workstationInfo);
+    
+    // Reset form
+    setDrawerNumber('');
+    setChairNumber('');
+    setNodesWorking(true);
+    setElectricalConnection(true);
+    setDrawerWorking(true);
+    setNotes('');
+  };
+
+  const handleCancel = () => {
+    // Reset form
+    setDrawerNumber('');
+    setChairNumber('');
+    setNodesWorking(true);
+    setElectricalConnection(true);
+    setDrawerWorking(true);
+    setNotes('');
+    onCancel();
+  };
+
+  return (
+    <div className="modal-overlay">
+      <div className="modal-container">
+        <div className="modal-header">
+          <h3>Información del Puesto de Trabajo</h3>
+          <p>Asignando a <strong>{employeeName}</strong> al escritorio <strong>{deskName}</strong></p>
+        </div>
+
+        <form onSubmit={handleSubmit} className="modal-form">
+          <div className="form-row">
+            <div className="form-group">
+              <label htmlFor="drawerNumber">Número de Cajón:</label>
+              <input
+                type="text"
+                id="drawerNumber"
+                value={drawerNumber}
+                onChange={(e) => setDrawerNumber(e.target.value)}
+                placeholder="Ej: 001, A-15, etc."
+              />
+            </div>
+
+            <div className="form-group">
+              <label htmlFor="chairNumber">Número de Silla:</label>
+              <input
+                type="text"
+                id="chairNumber"
+                value={chairNumber}
+                onChange={(e) => setChairNumber(e.target.value)}
+                placeholder="Ej: S-001, 123, etc."
+              />
+            </div>
+          </div>
+
+          <div className="form-row">
+            <div className="form-group checkbox-group">
+              <label className="checkbox-label">
+                <input
+                  type="checkbox"
+                  checked={nodesWorking}
+                  onChange={(e) => setNodesWorking(e.target.checked)}
+                />
+                <span className="checkbox-text">¿Funcionan los nodos?</span>
+              </label>
+            </div>
+
+            <div className="form-group checkbox-group">
+              <label className="checkbox-label">
+                <input
+                  type="checkbox"
+                  checked={electricalConnection}
+                  onChange={(e) => setElectricalConnection(e.target.checked)}
+                />
+                <span className="checkbox-text">¿Conexión eléctrica funciona?</span>
+              </label>
+            </div>
+          </div>
+
+          <div className="form-row">
+            <div className="form-group checkbox-group">
+              <label className="checkbox-label">
+                <input
+                  type="checkbox"
+                  checked={drawerWorking}
+                  onChange={(e) => setDrawerWorking(e.target.checked)}
+                />
+                <span className="checkbox-text">¿Cajón funciona?</span>
+              </label>
+            </div>
+          </div>
+
+          <div className="form-group">
+            <label htmlFor="notes">Notas adicionales (opcional):</label>
+            <textarea
+              id="notes"
+              value={notes}
+              onChange={(e) => setNotes(e.target.value)}
+              placeholder="Cualquier observación adicional..."
+              rows={3}
+            />
+          </div>
+
+          <div className="modal-actions">
+            <button type="button" onClick={handleCancel} className="btn-cancel">
+              Cancelar
+            </button>
+            <button type="submit" className="btn-confirm">
+              Confirmar Asignación
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+}

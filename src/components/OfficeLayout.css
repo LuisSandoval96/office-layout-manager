@@ -1,0 +1,106 @@
+.office-layout-container {
+  padding: 20px;
+  height: 100%;
+  overflow: auto;
+}
+
+.office-layout-container h2 {
+  margin: 0 0 20px 0;
+  color: #1f2937;
+  font-size: 24px;
+}
+
+.office-layout {
+  position: relative;
+  background: #f8fafc;
+  border: 2px dashed #cbd5e1;
+  border-radius: 12px;
+  min-height: 600px;
+  margin-bottom: 20px;
+  background-image: 
+    linear-gradient(45deg, #f1f5f9 25%, transparent 25%), 
+    linear-gradient(-45deg, #f1f5f9 25%, transparent 25%), 
+    linear-gradient(45deg, transparent 75%, #f1f5f9 75%), 
+    linear-gradient(-45deg, transparent 75%, #f1f5f9 75%);
+  background-size: 20px 20px;
+  background-position: 0 0, 0 10px, 10px -10px, -10px 0px;
+}
+
+.position-slot {
+  position: absolute;
+  border: 2px solid #e5e7eb;
+  border-radius: 8px;
+  background: #ffffff;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.position-slot.empty {
+  border-style: dashed;
+  background: #f9fafb;
+}
+
+.position-slot.occupied {
+  border-color: #10b981;
+  background: #ecfdf5;
+}
+
+.position-slot.drop-over {
+  border-color: #3b82f6;
+  background: #dbeafe;
+  transform: scale(1.05);
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+}
+
+.position-number {
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  background: #6b7280;
+  color: white;
+  font-size: 9px;
+  font-weight: bold;
+  padding: 2px 4px;
+  border-radius: 3px;
+  z-index: 1;
+  min-width: 20px;
+  text-align: center;
+}
+
+.position-slot.occupied .position-number {
+  background: #10b981;
+}
+
+.position-slot.drop-over .position-number {
+  background: #3b82f6;
+}
+
+.layout-info {
+  background: #f0f9ff;
+  border: 1px solid #bae6fd;
+  border-radius: 8px;
+  padding: 16px;
+  margin-top: 20px;
+}
+
+.layout-info p {
+  margin: 4px 0;
+  color: #0369a1;
+  font-size: 14px;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .office-layout-container {
+    padding: 10px;
+  }
+  
+  .office-layout {
+    transform: scale(0.8);
+    transform-origin: top left;
+  }
+}

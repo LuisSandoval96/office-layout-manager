@@ -1,0 +1,505 @@
+.statistics-panel {
+  padding: 20px;
+  height: 100%;
+  overflow: auto;
+}
+
+.panel-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 24px;
+}
+
+.panel-header h2 {
+  margin: 0;
+  color: #1f2937;
+  font-size: 24px;
+}
+
+.header-actions {
+  display: flex;
+  gap: 12px;
+}
+
+.export-button,
+.import-button,
+.regenerate-button,
+.danger-button {
+  padding: 10px 16px;
+  border: none;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-size: 14px;
+}
+
+.export-button {
+  background: #3b82f6;
+  color: white;
+}
+
+.export-button:hover {
+  background: #2563eb;
+}
+
+.import-button {
+  background: #10b981;
+  color: white;
+}
+
+.import-button:hover {
+  background: #059669;
+}
+
+.regenerate-button {
+  background: #f59e0b;
+  color: white;
+}
+
+.regenerate-button:hover {
+  background: #d97706;
+}
+
+.danger-button {
+  background: #ef4444;
+  color: white;
+}
+
+.danger-button:hover {
+  background: #dc2626;
+}
+
+.loading {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 200px;
+  color: #6b7280;
+  font-size: 16px;
+}
+
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 20px;
+  margin-bottom: 32px;
+}
+
+.stat-card {
+  background: white;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  padding: 20px;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  transition: transform 0.2s ease;
+}
+
+.stat-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.stat-icon {
+  background: #f0f9ff;
+  color: #0369a1;
+  padding: 12px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.stat-content h3 {
+  margin: 0 0 4px 0;
+  color: #6b7280;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.stat-value {
+  color: #1f2937;
+  font-size: 24px;
+  font-weight: 700;
+  margin-bottom: 4px;
+}
+
+.stat-detail {
+  color: #6b7280;
+  font-size: 12px;
+}
+
+.chart-section {
+  background: white;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  padding: 24px;
+  margin-bottom: 32px;
+}
+
+.chart-section h3 {
+  margin: 0 0 20px 0;
+  color: #1f2937;
+  font-size: 18px;
+}
+
+.department-chart {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.department-bar {
+  display: grid;
+  grid-template-columns: 1fr 200px 60px;
+  align-items: center;
+  gap: 16px;
+}
+
+.department-label {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-weight: 500;
+  color: #374151;
+  font-size: 14px;
+}
+
+.progress-bar {
+  background: #f3f4f6;
+  border-radius: 4px;
+  height: 8px;
+  overflow: hidden;
+}
+
+.progress-fill {
+  background: linear-gradient(90deg, #3b82f6, #1d4ed8);
+  height: 100%;
+  border-radius: 4px;
+  transition: width 0.3s ease;
+}
+
+.percentage {
+  text-align: right;
+  font-size: 12px;
+  color: #6b7280;
+  font-weight: 500;
+}
+
+.history-section {
+  background: white;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  padding: 24px;
+}
+
+.history-section h3 {
+  margin: 0 0 20px 0;
+  color: #1f2937;
+  font-size: 18px;
+}
+
+.history-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.history-item {
+  padding: 12px 16px;
+  background: #f9fafb;
+  border-radius: 8px;
+  border-left: 4px solid #3b82f6;
+}
+
+.history-content {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+}
+
+.history-action {
+  color: #374151;
+  font-size: 14px;
+  flex: 1;
+}
+
+.history-time {
+  color: #6b7280;
+  font-size: 12px;
+  white-space: nowrap;
+}
+
+.empty-history {
+  text-align: center;
+  padding: 40px 20px;
+  color: #6b7280;
+}
+
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.export-modal {
+  background: white;
+  padding: 24px;
+  border-radius: 12px;
+  width: 90%;
+  max-width: 600px;
+  max-height: 80vh;
+  overflow: auto;
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+}
+
+.export-modal h3 {
+  margin: 0 0 16px 0;
+  color: #1f2937;
+  font-size: 18px;
+}
+
+.export-modal p {
+  margin: 0 0 16px 0;
+  color: #6b7280;
+  line-height: 1.5;
+}
+
+.export-textarea {
+  width: 100%;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  padding: 12px;
+  font-family: monospace;
+  font-size: 12px;
+  resize: vertical;
+  margin-bottom: 20px;
+  box-sizing: border-box;
+}
+
+.modal-actions {
+  display: flex;
+  gap: 12px;
+  justify-content: flex-end;
+}
+
+.modal-actions button {
+  padding: 10px 20px;
+  border: none;
+  border-radius: 6px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.modal-actions button:first-child {
+  background: #f3f4f6;
+  color: #374151;
+}
+
+.modal-actions button:first-child:hover {
+  background: #e5e7eb;
+}
+
+.download-button {
+  background: #3b82f6 !important;
+  color: white !important;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.download-button:hover {
+  background: #2563eb !important;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .statistics-panel {
+    padding: 12px;
+  }
+  
+  .panel-header {
+    flex-direction: column;
+    gap: 12px;
+    align-items: stretch;
+  }
+  
+  .header-actions {
+    justify-content: center;
+    flex-wrap: wrap;
+  }
+  
+  .stats-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .department-bar {
+    grid-template-columns: 1fr;
+    gap: 8px;
+  }
+  
+  .department-label {
+    justify-content: space-between;
+  }
+  
+  .history-content {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+  }
+  
+  .export-modal {
+    margin: 20px;
+    width: calc(100% - 40px);
+  }
+}
+
+/* Estilos para estadísticas de puestos de trabajo */
+.workstation-stats-section {
+  margin: 32px 0;
+  padding: 24px;
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.workstation-stats-section h3 {
+  margin: 0 0 20px 0;
+  color: #1f2937;
+  font-size: 18px;
+  font-weight: 600;
+}
+
+.workstation-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.workstation-card {
+  background: #f8fafc;
+  border: 2px solid #e2e8f0;
+  border-radius: 10px;
+  padding: 16px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  transition: all 0.2s ease;
+}
+
+.workstation-card:hover {
+  border-color: #667eea;
+  transform: translateY(-1px);
+}
+
+.workstation-icon {
+  font-size: 24px;
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.workstation-content h4 {
+  margin: 0 0 4px 0;
+  font-size: 14px;
+  color: #6b7280;
+  font-weight: 500;
+}
+
+.workstation-value {
+  font-size: 20px;
+  font-weight: 700;
+  color: #1f2937;
+  margin-bottom: 2px;
+}
+
+.workstation-percentage {
+  font-size: 14px;
+  font-weight: 600;
+  color: #10b981;
+}
+
+.workstation-detail {
+  font-size: 12px;
+  color: #6b7280;
+}
+
+/* Problemas en puestos de trabajo */
+.workstation-issues {
+  margin-top: 24px;
+}
+
+.workstation-issues h4 {
+  margin: 0 0 16px 0;
+  color: #dc2626;
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.issues-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.issue-item {
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  border-radius: 8px;
+  padding: 12px;
+}
+
+.issue-desk {
+  font-weight: 600;
+  color: #991b1b;
+  margin-bottom: 6px;
+}
+
+.issue-problems {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.issue-tag {
+  background: #dc2626;
+  color: white;
+  padding: 2px 8px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+/* Responsive para puestos de trabajo */
+@media (max-width: 768px) {
+  .workstation-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .workstation-stats-section {
+    margin: 20px 0;
+    padding: 16px;
+  }
+}
