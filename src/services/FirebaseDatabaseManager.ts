@@ -15,7 +15,8 @@ import type {
   CreateEmployeeData, 
   UpdateEmployeeData,
   OfficeLayout,
-  Department
+  Department,
+  WorkstationInfo
 } from '../types/database';
 import { DEFAULT_DEPARTMENTS } from '../types/database';
 
@@ -496,8 +497,8 @@ export class FirebaseDatabaseManager {
     return true;
   }
 
-  public async assignEmployeeToPosition(employeeId: string, positionId: string): Promise<boolean> {
-    console.log('Firebase: Assigning employee to position', { employeeId, positionId });
+  public async assignEmployeeToPosition(employeeId: string, positionId: string, workstationInfo?: WorkstationInfo): Promise<boolean> {
+    console.log('Firebase: Assigning employee to position', { employeeId, positionId, workstationInfo });
     
     // Buscar empleado
     const employee = this.state.employees.find(emp => emp.id === employeeId);
@@ -553,13 +554,23 @@ export class FirebaseDatabaseManager {
     employee.position = position.number.toString();
     employee.updatedAt = new Date();
 
+    // Guardar información del workstation si se proporciona
+    if (workstationInfo) {
+      console.log('Saving workstation info:', workstationInfo);
+      position.workstationInfo = {
+        ...workstationInfo,
+        assignedDate: new Date()
+      };
+    }
+
     console.log('Assignment completed in state:', {
       positionId: position.id,
       positionNumber: position.number,
       positionEmployeeId: position.employeeId,
       positionOccupied: position.isOccupied,
       employeePosition: employee.position,
-      employeeName: employee.name
+      employeeName: employee.name,
+      workstationInfo: position.workstationInfo
     });
 
     // Añadir a historial

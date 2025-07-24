@@ -8,7 +8,8 @@ import type {
   CreateEmployeeData, 
   UpdateEmployeeData,
   OfficeLayout,
-  Department
+  Department,
+  WorkstationInfo
 } from '../types/database';
 
 // Interface común para ambos database managers
@@ -28,7 +29,7 @@ interface IDatabaseManager {
   updateEmployee(id: string, data: UpdateEmployeeData): Promise<Employee | null>;
   deleteEmployee(id: string): Promise<boolean>;
   
-  assignEmployeeToPosition(employeeId: string, positionId: string, workstationInfo?: any): Promise<boolean>;
+  assignEmployeeToPosition(employeeId: string, positionId: string, workstationInfo?: WorkstationInfo): Promise<boolean>;
   unassignEmployeeFromPosition(employeeId: string): Promise<boolean>;
   updateWorkstationInfo(positionNumber: number, workstationInfo: any): Promise<boolean>;
   
@@ -100,18 +101,8 @@ class DatabaseManagerWrapper implements IDatabaseManager {
     return this.manager.deleteEmployee(id);
   }
 
-  async assignEmployeeToPosition(employeeId: string, positionId: string, workstationInfo?: any): Promise<boolean> {
-    if (workstationInfo) {
-      // Si hay workstationInfo, primero asignar y luego actualizar la información
-      const positionNumber = parseInt(positionId.replace('pos-', ''));
-      const success = await this.manager.assignEmployeeToPosition(employeeId, positionId);
-      if (success) {
-        await this.manager.updateWorkstationInfo(positionNumber, workstationInfo);
-      }
-      return success;
-    } else {
-      return this.manager.assignEmployeeToPosition(employeeId, positionId);
-    }
+  async assignEmployeeToPosition(employeeId: string, positionId: string, workstationInfo?: WorkstationInfo): Promise<boolean> {
+    return this.manager.assignEmployeeToPosition(employeeId, positionId, workstationInfo);
   }
 
   async unassignEmployeeFromPosition(employeeId: string): Promise<boolean> {
