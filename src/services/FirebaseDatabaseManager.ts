@@ -44,13 +44,20 @@ export class FirebaseDatabaseManager {
     const docRef = doc(db, COLLECTION_NAME, DOCUMENT_ID);
     
     this.unsubscribe = onSnapshot(docRef, (doc) => {
+      console.log('Firebase document change detected');
       if (doc.exists()) {
         const data = doc.data();
+        console.log('Firebase data received:', {
+          employeesCount: data.employees?.length || 0,
+          positionsCount: data.layout?.positions?.length || 0
+        });
         this.state = this.convertFirebaseToState(data);
       } else {
+        console.log('Firebase document does not exist, creating initial document');
         // Si no existe el documento, crear uno inicial
         this.initializeFirebaseDocument();
       }
+      console.log('Notifying listeners of state change');
       this.notifyListeners();
     }, (error) => {
       console.error('Error listening to Firebase changes:', error);
@@ -114,10 +121,17 @@ export class FirebaseDatabaseManager {
 
   private async saveToFirebase(): Promise<void> {
     try {
+      console.log('Saving state to Firebase...');
       const docRef = doc(db, COLLECTION_NAME, DOCUMENT_ID);
       const firebaseData = this.convertStateToFirebase(this.state);
       
+      console.log('Firebase data to save:', {
+        employeesCount: firebaseData.employees?.length || 0,
+        positionsCount: firebaseData.layout?.positions?.length || 0
+      });
+      
       await updateDoc(docRef, firebaseData);
+      console.log('State saved to Firebase successfully');
     } catch (error) {
       console.error('Error saving to Firebase:', error);
       throw error;
@@ -327,6 +341,8 @@ export class FirebaseDatabaseManager {
   }
 
   private notifyListeners(): void {
+    console.log('Notifying listeners, current employees count:', this.state.employees.length);
+    console.log('Active listeners count:', this.listeners.length);
     this.listeners.forEach(listener => listener(this.state));
   }
 
@@ -366,6 +382,8 @@ export class FirebaseDatabaseManager {
 
   // Métodos de modificación de datos
   public async createEmployee(data: CreateEmployeeData): Promise<Employee> {
+    console.log('Creating new employee:', data);
+    
     const newEmployee: Employee = {
       id: `emp-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
       name: data.name,
@@ -380,7 +398,12 @@ export class FirebaseDatabaseManager {
     // Añadir a historial
     this.addToHistory('employee_created', `Empleado ${newEmployee.name} creado`);
     
+    console.log('Employee added to state, saving to Firebase...');
+    console.log('Current employees count:', this.state.employees.length);
+    
     await this.saveToFirebase();
+    
+    console.log('Employee saved to Firebase successfully');
     return newEmployee;
   }
 

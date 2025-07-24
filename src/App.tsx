@@ -35,9 +35,20 @@ function App() {
 
   const db = getDatabaseManager();
 
-  // Cargar datos iniciales
+  // Cargar datos iniciales y suscribirse a cambios
   useEffect(() => {
     loadData();
+    
+    // Suscribirse a cambios en tiempo real
+    const unsubscribe = db.subscribe((state) => {
+      setEmployees(state.employees);
+      setPositions(state.layout.positions);
+    });
+
+    // Cleanup function
+    return () => {
+      unsubscribe();
+    };
   }, []);
 
   const loadData = () => {
