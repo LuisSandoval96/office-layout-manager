@@ -8,6 +8,7 @@ interface WorkstationInfoModalProps {
   employeeName: string;
   onConfirm: (workstationInfo: WorkstationInfo) => void;
   onCancel: () => void;
+  existingInfo?: WorkstationInfo;
 }
 
 export function WorkstationInfoModal({ 
@@ -15,14 +16,15 @@ export function WorkstationInfoModal({
   deskName, 
   employeeName, 
   onConfirm, 
-  onCancel 
+  onCancel,
+  existingInfo
 }: WorkstationInfoModalProps) {
-  const [drawerNumber, setDrawerNumber] = useState('');
-  const [chairNumber, setChairNumber] = useState('');
-  const [nodesWorking, setNodesWorking] = useState(true);
-  const [electricalConnection, setElectricalConnection] = useState(true);
-  const [drawerWorking, setDrawerWorking] = useState(true);
-  const [notes, setNotes] = useState('');
+  const [drawerNumber, setDrawerNumber] = useState(existingInfo?.drawerNumber || '');
+  const [chairNumber, setChairNumber] = useState(existingInfo?.chairNumber || '');
+  const [nodesWorking, setNodesWorking] = useState(existingInfo?.nodesWorking ?? true);
+  const [electricalConnection, setElectricalConnection] = useState(existingInfo?.electricalConnection ?? true);
+  const [drawerWorking, setDrawerWorking] = useState(existingInfo?.drawerWorking ?? true);
+  const [notes, setNotes] = useState(existingInfo?.notes || '');
 
   if (!isOpen) return null;
 

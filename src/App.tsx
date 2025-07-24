@@ -91,8 +91,9 @@ function App() {
       const employee = db.getEmployeeById(employeeId);
       const position = db.getPositionById(positionId);
       
-      if (employee && position && !position.isOccupied) {
-        // Mostrar modal para capturar información del puesto
+      if (employee && position) {
+        // Siempre mostrar modal para capturar información del puesto
+        // sin importar si está ocupada o no
         setPendingAssignment({
           employeeId,
           positionId,
@@ -143,6 +144,28 @@ function App() {
     console.log('Mostrando detalles del puesto:', employee.name, position.deskName);
     setSelectedWorkstation({ employee, position });
     setShowDetailsModal(true);
+  };
+
+  // Editar información del puesto de trabajo
+  const handleEditWorkstationInfo = () => {
+    if (selectedWorkstation) {
+      // Cerrar modal de detalles
+      setShowDetailsModal(false);
+      
+      // Configurar asignación pendiente para editar
+      setPendingAssignment({
+        employeeId: selectedWorkstation.employee.id,
+        positionId: selectedWorkstation.position.id,
+        employee: selectedWorkstation.employee,
+        position: selectedWorkstation.position
+      });
+      
+      // Mostrar modal de edición
+      setShowWorkstationModal(true);
+      
+      // Limpiar selección
+      setSelectedWorkstation(null);
+    }
   };
 
   // Cerrar modal de detalles
@@ -265,6 +288,7 @@ function App() {
           employeeName={pendingAssignment?.employee.name || ''}
           onConfirm={handleWorkstationInfoConfirm}
           onCancel={handleWorkstationInfoCancel}
+          existingInfo={pendingAssignment?.position.workstationInfo}
         />
 
         {/* Modal de detalles del puesto de trabajo */}
@@ -274,6 +298,7 @@ function App() {
             employee={selectedWorkstation.employee}
             position={selectedWorkstation.position}
             onClose={handleCloseDetailsModal}
+            onEdit={handleEditWorkstationInfo}
           />
         )}
       </main>

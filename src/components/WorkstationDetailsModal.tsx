@@ -7,9 +7,10 @@ interface WorkstationDetailsModalProps {
   employee: Employee;
   position: OfficePosition;
   onClose: () => void;
+  onEdit?: () => void;
 }
 
-export function WorkstationDetailsModal({ isOpen, employee, position, onClose }: WorkstationDetailsModalProps) {
+export function WorkstationDetailsModal({ isOpen, employee, position, onClose, onEdit }: WorkstationDetailsModalProps) {
   if (!isOpen) return null;
 
   const workstationInfo = position.workstationInfo;
@@ -120,12 +121,46 @@ export function WorkstationDetailsModal({ isOpen, employee, position, onClose }:
               <div className="no-info">
                 <p>ℹ️ No hay información adicional registrada para este puesto.</p>
                 <p>La información se registra cuando se asigna un empleado usando drag & drop.</p>
+                {onEdit && (
+                  <button 
+                    className="edit-button" 
+                    onClick={onEdit}
+                    style={{ 
+                      marginTop: '10px', 
+                      padding: '8px 16px', 
+                      backgroundColor: '#007bff', 
+                      color: 'white', 
+                      border: 'none', 
+                      borderRadius: '4px', 
+                      cursor: 'pointer' 
+                    }}
+                  >
+                    ✏️ Agregar Información
+                  </button>
+                )}
               </div>
             )}
           </div>
         </div>
 
         <div className="details-modal-footer">
+          {onEdit && (
+            <button 
+              className="edit-footer-button" 
+              onClick={onEdit}
+              style={{ 
+                marginRight: '10px',
+                padding: '8px 16px', 
+                backgroundColor: '#28a745', 
+                color: 'white', 
+                border: 'none', 
+                borderRadius: '4px', 
+                cursor: 'pointer' 
+              }}
+            >
+              ✏️ Editar Información
+            </button>
+          )}
           <button className="close-footer-button" onClick={onClose}>
             Cerrar
           </button>
