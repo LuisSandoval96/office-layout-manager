@@ -237,8 +237,8 @@ export class FirebaseDatabaseManager {
         number: pos.number,
         deskName: pos.deskName,
         employeeId: null,
-        isOccupied: false,
-        workstationInfo: undefined
+        isOccupied: false
+        // workstationInfo se omite cuando es undefined
       });
     });
 
