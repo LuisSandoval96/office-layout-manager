@@ -447,16 +447,26 @@ export class FirebaseDatabaseManager {
   }
 
   public async assignEmployeeToPosition(employeeId: string, positionId: string): Promise<boolean> {
+    console.log('Firebase: Assigning employee to position', { employeeId, positionId });
+    
     const positionNumber = parseInt(positionId.replace('pos-', ''));
     const employee = this.state.employees.find(emp => emp.id === employeeId);
     const position = this.state.layout.positions.find(pos => pos.number === positionNumber);
     
-    if (!employee || !position) return false;
+    console.log('Found employee:', employee?.name);
+    console.log('Found position:', position?.deskName || position?.number);
+    
+    if (!employee || !position) {
+      console.error('Employee or position not found');
+      return false;
+    }
 
     // Quitar empleado de posición anterior si existe
     this.state.layout.positions.forEach(pos => {
       if (pos.employeeId === employeeId) {
+        console.log('Removing employee from previous position:', pos.deskName || pos.number);
         pos.employeeId = null;
+        pos.isOccupied = false;
       }
     });
 
@@ -464,19 +474,29 @@ export class FirebaseDatabaseManager {
     if (position.employeeId) {
       const previousEmployee = this.state.employees.find(emp => emp.id === position.employeeId);
       if (previousEmployee) {
+        console.log('Removing previous employee from position:', previousEmployee.name);
         this.addToHistory('unassigned', `${previousEmployee.name} removido de posición ${positionNumber}`);
       }
     }
 
     // Asignar empleado a nueva posición
     position.employeeId = employeeId;
+    position.isOccupied = true;
     employee.position = positionNumber.toString();
     employee.updatedAt = new Date();
+
+    console.log('Assignment completed in state:', {
+      positionEmployeeId: position.employeeId,
+      positionOccupied: position.isOccupied,
+      employeePosition: employee.position
+    });
 
     // Añadir a historial
     this.addToHistory('assigned', `${employee.name} asignado a posición ${positionNumber}`);
     
+    console.log('Saving to Firebase...');
     await this.saveToFirebase();
+    console.log('Firebase save completed');
     return true;
   }
 

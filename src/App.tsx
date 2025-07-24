@@ -41,8 +41,23 @@ function App() {
     
     // Suscribirse a cambios en tiempo real
     const unsubscribe = db.subscribe((state) => {
+      console.log('Firebase state update received:', {
+        employeesCount: state.employees.length,
+        positionsCount: state.layout.positions.length,
+        occupiedPositions: state.layout.positions.filter(p => p.employeeId).length
+      });
+      
       setEmployees(state.employees);
       setPositions(state.layout.positions);
+      
+      // Log de empleados asignados
+      const assignedEmployees = state.layout.positions
+        .filter(p => p.employeeId)
+        .map(p => {
+          const emp = state.employees.find(e => e.id === p.employeeId);
+          return { position: p.deskName || p.number, employee: emp?.name };
+        });
+      console.log('Currently assigned employees:', assignedEmployees);
     });
 
     // Cleanup function
@@ -92,13 +107,25 @@ function App() {
   // Confirmar asignación con información del puesto
   const handleWorkstationInfoConfirm = async (workstationInfo: WorkstationInfo) => {
     if (pendingAssignment) {
+      console.log('Assigning employee to position:', {
+        employeeId: pendingAssignment.employeeId,
+        positionId: pendingAssignment.positionId,
+        workstationInfo
+      });
+      
       const success = await db.assignEmployeeToPosition(
         pendingAssignment.employeeId, 
         pendingAssignment.positionId, 
         workstationInfo
       );
+      
+      console.log('Assignment result:', success);
+      
       if (success) {
-        loadData(); // Recargar datos
+        console.log('Assignment successful, Firebase should update automatically');
+        // No necesitamos loadData() porque Firebase se actualiza automáticamente
+      } else {
+        console.error('Assignment failed');
       }
     }
     setShowWorkstationModal(false);
