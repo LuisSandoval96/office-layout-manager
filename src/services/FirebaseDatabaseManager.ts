@@ -476,6 +476,26 @@ export class FirebaseDatabaseManager {
     return true;
   }
 
+  // Corregir datos incorrectos de empleado
+  public async fixEmployeeData(employeeId: string, correctData: { name: string; department: string; position: string }): Promise<boolean> {
+    const employeeIndex = this.state.employees.findIndex(emp => emp.id === employeeId);
+    if (employeeIndex === -1) return false;
+
+    this.state.employees[employeeIndex] = {
+      ...this.state.employees[employeeIndex],
+      name: correctData.name,
+      department: correctData.department,
+      position: correctData.position,
+      updatedAt: new Date()
+    };
+    
+    // Añadir a historial
+    this.addToHistory('employee_updated', `Datos de empleado ${correctData.name} corregidos`);
+    
+    await this.saveToFirebase();
+    return true;
+  }
+
   public async assignEmployeeToPosition(employeeId: string, positionId: string): Promise<boolean> {
     console.log('Firebase: Assigning employee to position', { employeeId, positionId });
     

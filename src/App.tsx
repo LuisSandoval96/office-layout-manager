@@ -142,6 +142,8 @@ function App() {
   // Mostrar detalles del puesto de trabajo
   const handleShowWorkstationDetails = (employee: Employee, position: OfficePosition) => {
     console.log('Mostrando detalles del puesto:', employee.name, position.deskName);
+    console.log('WorkstationInfo en posición:', position.workstationInfo);
+    console.log('Posición completa:', position);
     setSelectedWorkstation({ employee, position });
     setShowDetailsModal(true);
   };
@@ -167,6 +169,30 @@ function App() {
       setSelectedWorkstation(null);
     }
   };
+
+  // Función temporal para corregir datos de empleado
+  const fixEmployeeData = async () => {
+    const employee = employees.find(emp => emp.name === 'Luis Sandoval');
+    if (employee && employee.position === '79') {
+      console.log('Corrigiendo datos del empleado Luis Sandoval...');
+      const success = await db.fixEmployeeData(employee.id, {
+        name: 'Luis Sandoval',
+        department: 'Norteamerica', 
+        position: 'Analista'
+      });
+      if (success) {
+        console.log('Datos corregidos exitosamente');
+      }
+    }
+  };
+
+  // Ejecutar la corrección al cargar la página si es necesario
+  useEffect(() => {
+    const employee = employees.find(emp => emp.name === 'Luis Sandoval' && emp.position === '79');
+    if (employee) {
+      fixEmployeeData();
+    }
+  }, [employees]);
 
   // Cerrar modal de detalles
   const handleCloseDetailsModal = () => {

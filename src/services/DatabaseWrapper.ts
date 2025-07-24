@@ -36,6 +36,7 @@ interface IDatabaseManager {
   getStatistics(): any;
   clearAllData(): Promise<void>;
   forceResetLayout?(): Promise<void>; // Método opcional para Firebase
+  fixEmployeeData?(employeeId: string, correctData: { name: string; department: string; position: string }): Promise<boolean>; // Método para corregir datos
   
   subscribe(listener: (state: ApplicationState) => void): () => void;
   exportData(): ApplicationState;
@@ -146,6 +147,16 @@ class DatabaseManagerWrapper implements IDatabaseManager {
       return this.manager.forceResetLayout();
     } else {
       throw new Error('forceResetLayout not available in current database manager');
+    }
+  }
+
+  async fixEmployeeData(employeeId: string, correctData: { name: string; department: string; position: string }): Promise<boolean> {
+    if ('fixEmployeeData' in this.manager && typeof this.manager.fixEmployeeData === 'function') {
+      return this.manager.fixEmployeeData(employeeId, correctData);
+    } else {
+      // Fallback: usar updateEmployee si fixEmployeeData no está disponible
+      const result = await this.updateEmployee(employeeId, correctData);
+      return result !== null;
     }
   }
 }
