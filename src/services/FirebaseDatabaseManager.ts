@@ -49,9 +49,27 @@ export class FirebaseDatabaseManager {
         const data = doc.data();
         console.log('Firebase data received:', {
           employeesCount: data.employees?.length || 0,
-          positionsCount: data.layout?.positions?.length || 0
+          positionsCount: data.layout?.positions?.length || 0,
+          assignedPositions: data.layout?.positions?.filter((p: any) => p.employeeId).length || 0
         });
+        
+        // Log de posiciones asignadas
+        const assignedPositions = data.layout?.positions?.filter((p: any) => p.employeeId) || [];
+        console.log('Assigned positions from Firebase:', assignedPositions.map((p: any) => ({
+          deskName: p.deskName || p.number,
+          employeeId: p.employeeId,
+          isOccupied: p.isOccupied
+        })));
+        
         this.state = this.convertFirebaseToState(data);
+        
+        // Verificar estado después de conversión
+        const stateAssigned = this.state.layout.positions.filter(p => p.employeeId);
+        console.log('Assigned positions after conversion:', stateAssigned.map(p => ({
+          deskName: p.deskName || p.number,
+          employeeId: p.employeeId,
+          isOccupied: p.isOccupied
+        })));
       } else {
         console.log('Firebase document does not exist, creating initial document');
         // Si no existe el documento, crear uno inicial
@@ -85,6 +103,10 @@ export class FirebaseDatabaseManager {
       employees: data.employees || [],
       layout: {
         ...data.layout,
+        positions: (data.layout?.positions || []).map((pos: any) => ({
+          ...pos,
+          isOccupied: pos.employeeId !== null && pos.employeeId !== undefined
+        })),
         createdAt: data.layout?.createdAt?.toDate() || new Date(),
         updatedAt: data.layout?.updatedAt?.toDate() || new Date()
       },
@@ -102,6 +124,14 @@ export class FirebaseDatabaseManager {
     const cleanEmployees = state.employees.filter(emp => emp && emp.id);
     const cleanDepartments = state.departments.filter(dept => dept && dept.id);
     const cleanHistory = state.history.filter(record => record && record.timestamp);
+    
+    // Verificar asignaciones antes de guardar
+    const assignedPositions = state.layout.positions.filter(pos => pos.employeeId);
+    console.log('Positions with employees before saving:', assignedPositions.map(pos => ({
+      deskName: pos.deskName || pos.number,
+      employeeId: pos.employeeId,
+      isOccupied: pos.isOccupied
+    })));
     
     return {
       employees: cleanEmployees,
@@ -449,17 +479,35 @@ export class FirebaseDatabaseManager {
   public async assignEmployeeToPosition(employeeId: string, positionId: string): Promise<boolean> {
     console.log('Firebase: Assigning employee to position', { employeeId, positionId });
     
-    const positionNumber = parseInt(positionId.replace('pos-', ''));
+    // Buscar empleado
     const employee = this.state.employees.find(emp => emp.id === employeeId);
-    const position = this.state.layout.positions.find(pos => pos.number === positionNumber);
-    
-    console.log('Found employee:', employee?.name);
-    console.log('Found position:', position?.deskName || position?.number);
-    
-    if (!employee || !position) {
-      console.error('Employee or position not found');
+    if (!employee) {
+      console.error('Employee not found with ID:', employeeId);
       return false;
     }
+    console.log('Found employee:', employee.name);
+
+    // Buscar posición - probemos ambos métodos de búsqueda
+    let position = this.state.layout.positions.find(pos => pos.id === positionId);
+    if (!position) {
+      // Si no encontramos por ID, intentar por número
+      const positionNumber = parseInt(positionId.replace('pos-', ''));
+      position = this.state.layout.positions.find(pos => pos.number === positionNumber);
+      console.log('Searching by number:', positionNumber, 'Found:', !!position);
+    }
+    
+    if (!position) {
+      console.error('Position not found with ID:', positionId);
+      console.log('Available position IDs:', this.state.layout.positions.map(p => p.id).slice(0, 5));
+      return false;
+    }
+    
+    console.log('Found position:', {
+      id: position.id,
+      number: position.number,
+      deskName: position.deskName,
+      currentEmployeeId: position.employeeId
+    });
 
     // Quitar empleado de posición anterior si existe
     this.state.layout.positions.forEach(pos => {
@@ -475,24 +523,27 @@ export class FirebaseDatabaseManager {
       const previousEmployee = this.state.employees.find(emp => emp.id === position.employeeId);
       if (previousEmployee) {
         console.log('Removing previous employee from position:', previousEmployee.name);
-        this.addToHistory('unassigned', `${previousEmployee.name} removido de posición ${positionNumber}`);
+        this.addToHistory('unassigned', `${previousEmployee.name} removido de posición ${position.deskName || position.number}`);
       }
     }
 
     // Asignar empleado a nueva posición
     position.employeeId = employeeId;
     position.isOccupied = true;
-    employee.position = positionNumber.toString();
+    employee.position = position.number.toString();
     employee.updatedAt = new Date();
 
     console.log('Assignment completed in state:', {
+      positionId: position.id,
+      positionNumber: position.number,
       positionEmployeeId: position.employeeId,
       positionOccupied: position.isOccupied,
-      employeePosition: employee.position
+      employeePosition: employee.position,
+      employeeName: employee.name
     });
 
     // Añadir a historial
-    this.addToHistory('assigned', `${employee.name} asignado a posición ${positionNumber}`);
+    this.addToHistory('assigned', `${employee.name} asignado a posición ${position.deskName || position.number}`);
     
     console.log('Saving to Firebase...');
     await this.saveToFirebase();
