@@ -43,10 +43,40 @@ export function Statistics() {
   }, []);
 
   const loadStatistics = () => {
-    const statisticsData = db.getStatistics();
-    const historyData = db.getHistory().slice(0, 10); // Últimos 10 registros
-    setStats(statisticsData);
-    setHistory(historyData);
+    try {
+      console.log('Loading statistics...');
+      const statisticsData = db.getStatistics();
+      const historyData = db.getHistory().slice(0, 10); // Últimos 10 registros
+      console.log('Statistics loaded:', statisticsData);
+      setStats(statisticsData);
+      setHistory(historyData);
+    } catch (error) {
+      console.error('Error loading statistics:', error);
+      // Crear datos por defecto en caso de error
+      setStats({
+        totalPositions: 0,
+        occupiedPositions: 0,
+        availablePositions: 0,
+        totalEmployees: 0,
+        assignedEmployees: 0,
+        unassignedEmployees: 0,
+        employeesByDepartment: {},
+        occupancyRate: 0,
+        workstationStats: {
+          totalAssignmentsWithInfo: 0,
+          nodesWorkingCount: 0,
+          nodesWorkingPercentage: 0,
+          electricalWorkingCount: 0,
+          electricalWorkingPercentage: 0,
+          drawerWorkingCount: 0,
+          drawerWorkingPercentage: 0,
+          drawerAssignedCount: 0,
+          chairAssignedCount: 0,
+          workstationIssues: []
+        }
+      });
+      setHistory([]);
+    }
   };
 
   const handleExportData = () => {

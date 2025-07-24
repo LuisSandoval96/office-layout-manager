@@ -558,23 +558,83 @@ export class FirebaseDatabaseManager {
     const totalPositions = positions.length;
     const occupiedPositions = positions.filter(pos => pos.employeeId !== null).length;
     const availablePositions = totalPositions - occupiedPositions;
-    
-    const departmentStats = this.state.departments.map(dept => {
-      const deptEmployees = employees.filter(emp => emp.department === dept.name);
-      return {
-        name: dept.name,
-        count: deptEmployees.length,
-        color: dept.color
-      };
+    const assignedEmployees = employees.filter(emp => {
+      return positions.some(pos => pos.employeeId === emp.id);
+    }).length;
+    const unassignedEmployees = employees.length - assignedEmployees;
+
+    // Estadísticas por departamento
+    const employeesByDepartment: Record<string, number> = {};
+    this.state.departments.forEach(dept => {
+      employeesByDepartment[dept.name] = employees.filter(emp => emp.department === dept.name).length;
     });
 
+    // Estadísticas de workstation
+    let totalAssignmentsWithInfo = 0;
+    let nodesWorkingCount = 0;
+    let electricalWorkingCount = 0;
+    let drawerWorkingCount = 0;
+    let drawerAssignedCount = 0;
+    let chairAssignedCount = 0;
+    const workstationIssues: Array<{
+      deskName: string;
+      employee: string;
+      issues: string[];
+    }> = [];
+
+    positions.forEach(pos => {
+      if (pos.employeeId && pos.workstationInfo) {
+        totalAssignmentsWithInfo++;
+        const info = pos.workstationInfo;
+        
+        if (info.nodesWorking) nodesWorkingCount++;
+        if (info.electricalConnection) electricalWorkingCount++;
+        if (info.drawerWorking) drawerWorkingCount++;
+        if (info.drawerNumber) drawerAssignedCount++;
+        if (info.chairNumber) chairAssignedCount++;
+
+        // Verificar problemas
+        const issues: string[] = [];
+        if (!info.nodesWorking) issues.push('Nodos no funcionan');
+        if (!info.electricalConnection) issues.push('Conexión eléctrica no funciona');
+        if (!info.drawerWorking) issues.push('Cajón no funciona');
+        if (!info.drawerNumber) issues.push('Sin cajón asignado');
+        if (!info.chairNumber) issues.push('Sin silla asignada');
+
+        if (issues.length > 0) {
+          const employee = employees.find(emp => emp.id === pos.employeeId);
+          workstationIssues.push({
+            deskName: pos.deskName || `Posición ${pos.number}`,
+            employee: employee?.name || 'Desconocido',
+            issues
+          });
+        }
+      }
+    });
+
+    const occupancyRate = totalPositions > 0 ? (occupiedPositions / totalPositions) * 100 : 0;
+
     return {
-      totalEmployees: employees.length,
       totalPositions,
       occupiedPositions,
       availablePositions,
-      occupancyRate: totalPositions > 0 ? (occupiedPositions / totalPositions) * 100 : 0,
-      departmentStats
+      totalEmployees: employees.length,
+      assignedEmployees,
+      unassignedEmployees,
+      employeesByDepartment,
+      occupancyRate,
+      workstationStats: {
+        totalAssignmentsWithInfo,
+        nodesWorkingCount,
+        nodesWorkingPercentage: totalAssignmentsWithInfo > 0 ? (nodesWorkingCount / totalAssignmentsWithInfo) * 100 : 0,
+        electricalWorkingCount,
+        electricalWorkingPercentage: totalAssignmentsWithInfo > 0 ? (electricalWorkingCount / totalAssignmentsWithInfo) * 100 : 0,
+        drawerWorkingCount,
+        drawerWorkingPercentage: totalAssignmentsWithInfo > 0 ? (drawerWorkingCount / totalAssignmentsWithInfo) * 100 : 0,
+        drawerAssignedCount,
+        chairAssignedCount,
+        workstationIssues
+      }
     };
   }
 
