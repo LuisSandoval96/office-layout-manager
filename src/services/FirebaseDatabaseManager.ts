@@ -4,7 +4,7 @@ import {
   updateDoc, 
   onSnapshot, 
   serverTimestamp,
-  Timestamp
+  Timestamp 
 } from 'firebase/firestore';
 import { db } from '../config/firebase';
 import type { 
@@ -91,15 +91,20 @@ export class FirebaseDatabaseManager {
   }
 
   private convertStateToFirebase(state: ApplicationState): any {
+    // Filtrar datos undefined/null para evitar errores de Firestore
+    const cleanEmployees = state.employees.filter(emp => emp && emp.id);
+    const cleanDepartments = state.departments.filter(dept => dept && dept.id);
+    const cleanHistory = state.history.filter(record => record && record.timestamp);
+    
     return {
-      employees: state.employees,
+      employees: cleanEmployees,
       layout: {
         ...state.layout,
-        createdAt: Timestamp.fromDate(state.layout.createdAt),
+        createdAt: Timestamp.fromDate(state.layout.createdAt || new Date()),
         updatedAt: Timestamp.fromDate(new Date())
       },
-      departments: state.departments,
-      history: state.history.map(record => ({
+      departments: cleanDepartments,
+      history: cleanHistory.map(record => ({
         ...record,
         timestamp: Timestamp.fromDate(record.timestamp)
       })),
