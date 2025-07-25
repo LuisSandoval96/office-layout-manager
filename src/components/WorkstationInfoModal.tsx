@@ -28,8 +28,17 @@ export function WorkstationInfoModal({
 
   if (!isOpen) return null;
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleConfirmClick = () => {
+    console.log('WorkstationInfoModal: Confirm button clicked');
+    
+    console.log('WorkstationInfoModal: Form data:', {
+      drawerNumber: drawerNumber.trim(),
+      chairNumber: chairNumber.trim(),
+      nodesWorking,
+      electricalConnection,
+      drawerWorking,
+      notes: notes.trim()
+    });
     
     const workstationInfo: WorkstationInfo = {
       drawerNumber: drawerNumber.trim() || undefined,
@@ -41,7 +50,14 @@ export function WorkstationInfoModal({
       notes: notes.trim() || undefined
     };
 
-    onConfirm(workstationInfo);
+    console.log('WorkstationInfoModal: Calling onConfirm with:', workstationInfo);
+    
+    try {
+      onConfirm(workstationInfo);
+      console.log('WorkstationInfoModal: onConfirm called successfully');
+    } catch (error) {
+      console.error('WorkstationInfoModal: Error calling onConfirm:', error);
+    }
     
     // Reset form
     setDrawerNumber('');
@@ -50,6 +66,12 @@ export function WorkstationInfoModal({
     setElectricalConnection(true);
     setDrawerWorking(true);
     setNotes('');
+  };
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    console.log('WorkstationInfoModal: Form submit event triggered');
+    handleConfirmClick();
   };
 
   const handleCancel = () => {
@@ -148,7 +170,7 @@ export function WorkstationInfoModal({
             <button type="button" onClick={handleCancel} className="btn-cancel">
               Cancelar
             </button>
-            <button type="submit" className="btn-confirm">
+            <button type="button" onClick={handleConfirmClick} className="btn-confirm">
               Confirmar Asignación
             </button>
           </div>

@@ -38,6 +38,9 @@ interface IDatabaseManager {
   clearAllData(): Promise<void>;
   forceResetLayout?(): Promise<void>; // Método opcional para Firebase
   fixEmployeeData?(employeeId: string, correctData: { name: string; department: string; position: string }): Promise<boolean>; // Método para corregir datos
+  fixCorruptedEmployeeData?(): Promise<boolean>; // Método para corregir datos corruptos
+  debugSync?(): void; // Método de debug
+  forceSyncFromFirebase?(): Promise<void>; // Método para forzar sincronización
   
   subscribe(listener: (state: ApplicationState) => void): () => void;
   exportData(): ApplicationState;
@@ -148,6 +151,30 @@ class DatabaseManagerWrapper implements IDatabaseManager {
       // Fallback: usar updateEmployee si fixEmployeeData no está disponible
       const result = await this.updateEmployee(employeeId, correctData);
       return result !== null;
+    }
+  }
+
+  async fixCorruptedEmployeeData(): Promise<boolean> {
+    if ('fixCorruptedEmployeeData' in this.manager && typeof this.manager.fixCorruptedEmployeeData === 'function') {
+      return this.manager.fixCorruptedEmployeeData();
+    } else {
+      throw new Error('fixCorruptedEmployeeData not available in current database manager');
+    }
+  }
+
+  debugSync(): void {
+    if ('debugSync' in this.manager && typeof this.manager.debugSync === 'function') {
+      this.manager.debugSync();
+    } else {
+      console.log('debugSync not available in current database manager');
+    }
+  }
+
+  async forceSyncFromFirebase(): Promise<void> {
+    if ('forceSyncFromFirebase' in this.manager && typeof this.manager.forceSyncFromFirebase === 'function') {
+      return this.manager.forceSyncFromFirebase();
+    } else {
+      throw new Error('forceSyncFromFirebase not available in current database manager');
     }
   }
 }

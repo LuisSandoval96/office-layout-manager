@@ -1,7 +1,7 @@
 import { 
   doc, 
   setDoc, 
-  updateDoc, 
+  getDoc,
   onSnapshot, 
   serverTimestamp,
   Timestamp 
@@ -126,18 +126,38 @@ export class FirebaseDatabaseManager {
     const cleanDepartments = state.departments.filter(dept => dept && dept.id);
     const cleanHistory = state.history.filter(record => record && record.timestamp);
     
-    // Verificar asignaciones antes de guardar
+    // Verificar asignaciones antes de guardar con más detalle
     const assignedPositions = state.layout.positions.filter(pos => pos.employeeId);
-    console.log('Positions with employees before saving:', assignedPositions.map(pos => ({
+    console.log('CONVERT: Total positions:', state.layout.positions.length);
+    console.log('CONVERT: Assigned positions before saving:', assignedPositions.length);
+    console.log('CONVERT: Assigned positions details:', assignedPositions.map(pos => ({
+      id: pos.id,
+      number: pos.number,
       deskName: pos.deskName || pos.number,
       employeeId: pos.employeeId,
       isOccupied: pos.isOccupied
     })));
     
+    // Asegurar que las posiciones se mantengan intactas
+    const cleanPositions = state.layout.positions.map(pos => ({
+      ...pos,
+      // Asegurar que los timestamps sean válidos
+      assignedDate: pos.assignedDate || null,
+      workstationInfo: pos.workstationInfo ? {
+        ...pos.workstationInfo,
+        assignedDate: pos.workstationInfo.assignedDate || new Date()
+      } : undefined
+    }));
+    
+    console.log('CONVERT: Clean positions count:', cleanPositions.length);
+    console.log('CONVERT: Clean assigned positions:', cleanPositions.filter(p => p.employeeId).length);
+    
     return {
       employees: cleanEmployees,
       layout: {
-        ...state.layout,
+        id: state.layout.id,
+        name: state.layout.name,
+        positions: cleanPositions, // Usar las posiciones limpias directamente
         createdAt: Timestamp.fromDate(state.layout.createdAt || new Date()),
         updatedAt: Timestamp.fromDate(new Date())
       },
@@ -152,19 +172,62 @@ export class FirebaseDatabaseManager {
 
   private async saveToFirebase(): Promise<void> {
     try {
-      console.log('Saving state to Firebase...');
+      console.log('SAVE: Starting save to Firebase...');
       const docRef = doc(db, COLLECTION_NAME, DOCUMENT_ID);
       const firebaseData = this.convertStateToFirebase(this.state);
       
-      console.log('Firebase data to save:', {
+      console.log('SAVE: Firebase data to save:', {
         employeesCount: firebaseData.employees?.length || 0,
-        positionsCount: firebaseData.layout?.positions?.length || 0
+        positionsCount: firebaseData.layout?.positions?.length || 0,
+        assignedPositions: firebaseData.layout?.positions?.filter((p: any) => p.employeeId)?.length || 0
       });
       
-      await updateDoc(docRef, firebaseData);
-      console.log('State saved to Firebase successfully');
+      // Log specific assignment data with more detail
+      const assignedPositions = firebaseData.layout?.positions?.filter((p: any) => p.employeeId) || [];
+      console.log('SAVE: Assigned positions data (detailed):', assignedPositions.map((p: any) => ({
+        id: p.id,
+        number: p.number,
+        deskName: p.deskName,
+        employeeId: p.employeeId,
+        isOccupied: p.isOccupied,
+        hasWorkstationInfo: !!p.workstationInfo
+      })));
+      
+      // Verificar que los empleados existen y tienen datos válidos
+      const employeesData = firebaseData.employees || [];
+      console.log('SAVE: Employees data (detailed):', employeesData.map((e: any) => ({
+        id: e.id,
+        name: e.name,
+        position: e.position,
+        department: e.department
+      })));
+      
+      // Usar setDoc para asegurar que todos los datos se guardan completamente
+      console.log('SAVE: Using setDoc with merge:true to save data...');
+      await setDoc(docRef, firebaseData, { merge: true });
+      
+      console.log('SAVE: setDoc completed successfully');
+      
+      // Verificar que los datos se guardaron haciendo una re-lectura rápida
+      console.log('SAVE: Verifying data was saved correctly...');
+      const savedDoc = await getDoc(docRef);
+      if (savedDoc.exists()) {
+        const savedData = savedDoc.data();
+        const savedAssignments = savedData.layout?.positions?.filter((p: any) => p.employeeId) || [];
+        console.log('SAVE: Verification - saved assignments count:', savedAssignments.length);
+        console.log('SAVE: Verification - saved assignments:', savedAssignments.map((p: any) => ({
+          id: p.id,
+          number: p.number,
+          deskName: p.deskName,
+          employeeId: p.employeeId
+        })));
+      } else {
+        console.error('SAVE: Document does not exist after saving!');
+      }
+      
+      console.log('SAVE: State saved to Firebase successfully');
     } catch (error) {
-      console.error('Error saving to Firebase:', error);
+      console.error('SAVE: Error saving to Firebase:', error);
       throw error;
     }
   }
@@ -377,6 +440,41 @@ export class FirebaseDatabaseManager {
     this.listeners.forEach(listener => listener(this.state));
   }
 
+  // Método para debug de sincronización
+  public debugSync(): void {
+    console.log('=== DEBUG SYNC ===');
+    console.log('Current state employees:', this.state.employees.map(emp => ({ id: emp.id, name: emp.name })));
+    console.log('Current state assigned positions:', 
+      this.state.layout.positions.filter(pos => pos.employeeId).map(pos => ({
+        id: pos.id,
+        number: pos.number,
+        deskName: pos.deskName,
+        employeeId: pos.employeeId,
+        isOccupied: pos.isOccupied
+      }))
+    );
+    console.log('Active listeners:', this.listeners.length);
+    console.log('==================');
+  }
+
+  // Método para forzar re-sincronización
+  public async forceSyncFromFirebase(): Promise<void> {
+    console.log('Forcing sync from Firebase...');
+    try {
+      const docRef = doc(db, COLLECTION_NAME, DOCUMENT_ID);
+      // Forzar re-lectura del documento
+      const docSnap = await getDoc(docRef);
+      if (docSnap.exists()) {
+        const data = docSnap.data();
+        this.state = this.convertFirebaseToState(data);
+        console.log('Force sync completed, notifying listeners...');
+        this.notifyListeners();
+      }
+    } catch (error) {
+      console.error('Error forcing sync:', error);
+    }
+  }
+
   // Métodos de acceso a datos
   public getState(): ApplicationState {
     return { ...this.state };
@@ -497,16 +595,80 @@ export class FirebaseDatabaseManager {
     return true;
   }
 
-  public async assignEmployeeToPosition(employeeId: string, positionId: string, workstationInfo?: WorkstationInfo): Promise<boolean> {
-    console.log('Firebase: Assigning employee to position', { employeeId, positionId, workstationInfo });
+  // Método para corregir datos corruptos de empleados
+  public async fixCorruptedEmployeeData(): Promise<boolean> {
+    console.log('Fixing corrupted employee data...');
     
-    // Buscar empleado
-    const employee = this.state.employees.find(emp => emp.id === employeeId);
-    if (!employee) {
-      console.error('Employee not found with ID:', employeeId);
+    // Corregir datos conocidos que están corruptos
+    const corrections = [
+      {
+        name: 'Jossafath Almaguer',
+        correctPosition: 'Analista',
+        correctDepartment: 'Norteamerica'
+      },
+      {
+        name: 'Orlando Alvarado', 
+        correctPosition: 'Analista',
+        correctDepartment: 'Norteamerica'
+      }
+    ];
+    
+    let correctedCount = 0;
+    
+    for (const correction of corrections) {
+      const employee = this.state.employees.find(emp => emp.name === correction.name);
+      if (employee) {
+        // Solo corregir si el position es un número o está incorrecto
+        if (typeof employee.position === 'string' && /^\d+$/.test(employee.position)) {
+          console.log(`Correcting ${employee.name}: position "${employee.position}" → "${correction.correctPosition}"`);
+          employee.position = correction.correctPosition;
+          employee.department = correction.correctDepartment;
+          employee.updatedAt = new Date();
+          correctedCount++;
+        }
+      }
+    }
+    
+    if (correctedCount > 0) {
+      console.log(`Corrected ${correctedCount} employees`);
+      // Añadir a historial
+      this.addToHistory('employee_updated', `Datos corregidos para ${correctedCount} empleados`);
+      
+      await this.saveToFirebase();
+      console.log('Employee data corrections saved to Firebase');
+      return true;
+    } else {
+      console.log('No corrupted employee data found to fix');
       return false;
     }
-    console.log('Found employee:', employee.name);
+  }
+
+  public async assignEmployeeToPosition(employeeId: string, positionId: string, workstationInfo?: WorkstationInfo): Promise<boolean> {
+    console.log('==========================================');
+    console.log('ASSIGNMENT: Starting assignment process');
+    console.log('ASSIGNMENT: Employee ID:', employeeId);
+    console.log('ASSIGNMENT: Position ID:', positionId);
+    console.log('ASSIGNMENT: Workstation Info:', workstationInfo);
+    console.log('ASSIGNMENT: Current employees count:', this.state.employees.length);
+    console.log('ASSIGNMENT: Current positions count:', this.state.layout.positions.length);
+    
+    // Buscar empleado con validación completa
+    const employee = this.state.employees.find(emp => emp.id === employeeId);
+    if (!employee) {
+      console.error('ASSIGNMENT: Employee not found with ID:', employeeId);
+      console.log('ASSIGNMENT: Available employees:', this.state.employees.map(e => ({ 
+        id: e.id, 
+        name: e.name, 
+        position: e.position 
+      })));
+      return false;
+    }
+    console.log('ASSIGNMENT: Found employee:', { 
+      id: employee.id, 
+      name: employee.name, 
+      position: employee.position,
+      department: employee.department 
+    });
 
     // Buscar posición - probemos ambos métodos de búsqueda
     let position = this.state.layout.positions.find(pos => pos.id === positionId);
@@ -514,36 +676,58 @@ export class FirebaseDatabaseManager {
       // Si no encontramos por ID, intentar por número
       const positionNumber = parseInt(positionId.replace('pos-', ''));
       position = this.state.layout.positions.find(pos => pos.number === positionNumber);
-      console.log('Searching by number:', positionNumber, 'Found:', !!position);
+      console.log('ASSIGNMENT: Searching by number:', positionNumber, 'Found:', !!position);
     }
     
     if (!position) {
-      console.error('Position not found with ID:', positionId);
-      console.log('Available position IDs:', this.state.layout.positions.map(p => p.id).slice(0, 5));
+      console.error('ASSIGNMENT: Position not found with ID:', positionId);
+      console.log('ASSIGNMENT: Available position IDs (first 10):', this.state.layout.positions.slice(0, 10).map(p => ({ 
+        id: p.id, 
+        number: p.number, 
+        deskName: p.deskName 
+      })));
       return false;
     }
     
-    console.log('Found position:', {
+    console.log('ASSIGNMENT: Found position:', {
       id: position.id,
       number: position.number,
       deskName: position.deskName,
-      currentEmployeeId: position.employeeId
+      currentEmployeeId: position.employeeId,
+      isOccupied: position.isOccupied
     });
 
+    // Validar que los datos son correctos
+    if (!employee.id || !employee.name) {
+      console.error('ASSIGNMENT: Employee data is invalid:', employee);
+      return false;
+    }
+
+    if (!position.id) {
+      console.error('ASSIGNMENT: Position data is invalid:', position);
+      return false;
+    }
+
     // Quitar empleado de posición anterior si existe
+    let removedFromPrevious = false;
     this.state.layout.positions.forEach(pos => {
       if (pos.employeeId === employeeId) {
-        console.log('Removing employee from previous position:', pos.deskName || pos.number);
+        console.log('ASSIGNMENT: Removing employee from previous position:', pos.deskName || pos.number);
         pos.employeeId = null;
         pos.isOccupied = false;
+        removedFromPrevious = true;
       }
     });
+    
+    if (removedFromPrevious) {
+      console.log('ASSIGNMENT: Employee removed from previous position successfully');
+    }
 
     // Quitar cualquier otro empleado de la nueva posición
     if (position.employeeId) {
       const previousEmployee = this.state.employees.find(emp => emp.id === position.employeeId);
       if (previousEmployee) {
-        console.log('Removing previous employee from position:', previousEmployee.name);
+        console.log('ASSIGNMENT: Removing previous employee from position:', previousEmployee.name);
         this.addToHistory('unassigned', `${previousEmployee.name} removido de posición ${position.deskName || position.number}`);
       }
     }
@@ -551,35 +735,75 @@ export class FirebaseDatabaseManager {
     // Asignar empleado a nueva posición
     position.employeeId = employeeId;
     position.isOccupied = true;
-    employee.position = position.number.toString();
+    // NO modificar employee.position ya que contiene el cargo (Analista, Supervisor, etc.)
     employee.updatedAt = new Date();
 
     // Guardar información del workstation si se proporciona
     if (workstationInfo) {
-      console.log('Saving workstation info:', workstationInfo);
+      console.log('ASSIGNMENT: Saving workstation info:', workstationInfo);
       position.workstationInfo = {
         ...workstationInfo,
         assignedDate: new Date()
       };
     }
 
-    console.log('Assignment completed in state:', {
+    console.log('ASSIGNMENT: Assignment completed in local state:', {
       positionId: position.id,
       positionNumber: position.number,
+      positionDeskName: position.deskName,
       positionEmployeeId: position.employeeId,
       positionOccupied: position.isOccupied,
-      employeePosition: employee.position,
+      employeeId: employee.id,
       employeeName: employee.name,
-      workstationInfo: position.workstationInfo
+      employeePosition: employee.position,
+      employeeDepartment: employee.department,
+      hasWorkstationInfo: !!position.workstationInfo
     });
+
+    // Verificar que la asignación se hizo correctamente en el estado local
+    const verifyPosition = this.state.layout.positions.find(p => p.id === positionId);
+    if (!verifyPosition || verifyPosition.employeeId !== employeeId) {
+      console.error('ASSIGNMENT: Local assignment verification failed!');
+      console.log('ASSIGNMENT: Expected employee ID:', employeeId);
+      console.log('ASSIGNMENT: Actual employee ID in position:', verifyPosition?.employeeId);
+      return false;
+    }
 
     // Añadir a historial
     this.addToHistory('assigned', `${employee.name} asignado a posición ${position.deskName || position.number}`);
     
-    console.log('Saving to Firebase...');
-    await this.saveToFirebase();
-    console.log('Firebase save completed');
-    return true;
+    console.log('ASSIGNMENT: About to save to Firebase...');
+    console.log('ASSIGNMENT: All assigned positions before save:', 
+      this.state.layout.positions.filter(p => p.employeeId).map(p => ({
+        id: p.id,
+        number: p.number,
+        deskName: p.deskName,
+        employeeId: p.employeeId,
+        isOccupied: p.isOccupied
+      }))
+    );
+    
+    try {
+      await this.saveToFirebase();
+      console.log('ASSIGNMENT: Firebase save completed successfully');
+      
+      // Verificar que los datos se mantuvieron después del guardado
+      const finalPosition = this.state.layout.positions.find(p => p.id === positionId);
+      if (finalPosition?.employeeId === employeeId) {
+        console.log('ASSIGNMENT: Final verification successful - assignment persisted');
+      } else {
+        console.error('ASSIGNMENT: Final verification failed - assignment was lost!');
+        console.log('ASSIGNMENT: Expected:', employeeId, 'Got:', finalPosition?.employeeId);
+      }
+      
+      console.log('ASSIGNMENT: Process completed successfully');
+      console.log('==========================================');
+      return true;
+    } catch (error) {
+      console.error('ASSIGNMENT: Error saving to Firebase:', error);
+      console.log('==========================================');
+      return false;
+    }
   }
 
   public async unassignEmployeeFromPosition(employeeId: string): Promise<boolean> {
@@ -590,10 +814,11 @@ export class FirebaseDatabaseManager {
     this.state.layout.positions.forEach(pos => {
       if (pos.employeeId === employeeId) {
         pos.employeeId = null;
+        pos.isOccupied = false;
       }
     });
 
-    employee.position = "";
+    // NO modificar employee.position ya que contiene el cargo del empleado
     employee.updatedAt = new Date();
 
     // Añadir a historial

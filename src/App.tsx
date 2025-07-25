@@ -71,6 +71,49 @@ function App() {
     setPositions(db.getPositions());
   };
 
+  // Función debug para corregir datos corruptos
+  const fixCorruptedData = async () => {
+    console.log('User requested to fix corrupted employee data');
+    console.log('Current employees:', employees);
+    
+    try {
+      // Buscar empleado con cargo corrupto
+      const corruptedEmployee = employees.find(emp => 
+        emp.name === 'Jossafath Almaguer' && 
+        (emp.position === '75' || typeof emp.position === 'string' && /^\d+$/.test(emp.position))
+      );
+      
+      if (corruptedEmployee) {
+        console.log('Found corrupted employee:', corruptedEmployee);
+        console.log('Correcting position from', corruptedEmployee.position, 'to Analista');
+        
+        // Usar el método updateEmployee para corregir los datos
+        const result = await db.updateEmployee(corruptedEmployee.id, {
+          name: 'Jossafath Almaguer',
+          department: 'Norteamerica',
+          position: 'Analista'
+        });
+        
+        if (result) {
+          console.log('Employee data has been corrected!');
+          alert('Datos de empleados corregidos exitosamente!');
+          // Forzar actualización de datos
+          loadData();
+        } else {
+          console.log('Failed to correct employee data');
+          alert('Error al corregir datos del empleado');
+        }
+      } else {
+        console.log('No corrupted employee data found');
+        alert('No se encontraron datos corruptos para corregir');
+      }
+      
+    } catch (error) {
+      console.error('Error fixing corrupted data:', error);
+      alert('Error al corregir datos: ' + error);
+    }
+  };
+
   const handleDragStart = (event: DragStartEvent) => {
     const employeeId = event.active.id as string;
     const employee = db.getEmployeeById(employeeId);
@@ -249,6 +292,21 @@ function App() {
             onClick={() => setActiveTab('stats')}
           >
             📊 Estadísticas
+          </button>
+          <button 
+            onClick={fixCorruptedData}
+            style={{ 
+              padding: '8px 16px', 
+              backgroundColor: '#f44336', 
+              color: 'white', 
+              border: 'none', 
+              borderRadius: '4px',
+              fontSize: '14px',
+              fontWeight: 'bold',
+              marginLeft: '20px'
+            }}
+          >
+            🔧 Fix Data
           </button>
         </nav>
       </header>

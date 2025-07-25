@@ -53,6 +53,26 @@ export function OfficeLayout({ positions, employees, onUnassignEmployee, onShowW
   const maxX = Math.max(...positions.map(p => p.x + p.width));
   const maxY = Math.max(...positions.map(p => p.y + p.height));
 
+  // Debug: Log para ver qué datos estamos recibiendo
+  console.log('OfficeLayout RENDER: Positions count:', positions.length);
+  console.log('OfficeLayout RENDER: Employees count:', employees.length);
+  
+  const assignedPositions = positions.filter(p => p.employeeId);
+  console.log('OfficeLayout RENDER: Assigned positions count:', assignedPositions.length);
+  console.log('OfficeLayout RENDER: Assigned positions details:', assignedPositions.map(p => ({
+    id: p.id,
+    number: p.number,
+    deskName: p.deskName,
+    employeeId: p.employeeId,
+    isOccupied: p.isOccupied
+  })));
+  
+  console.log('OfficeLayout RENDER: Employees details:', employees.map(e => ({
+    id: e.id,
+    name: e.name,
+    position: e.position
+  })));
+
   return (
     <div className="office-layout-container">
       <h2>Layout de Oficina</h2>
@@ -65,6 +85,13 @@ export function OfficeLayout({ positions, employees, onUnassignEmployee, onShowW
       >
         {positions.map((position) => {
           const employee = employees.find(emp => emp.id === position.employeeId);
+          
+          // Debug: Log específico para cada posición
+          if (position.employeeId) {
+            console.log('OfficeLayout RENDER: Position', position.deskName || position.number, 'has employeeId:', position.employeeId);
+            console.log('OfficeLayout RENDER: Found employee for this position:', employee ? `${employee.name} (${employee.id})` : 'NOT FOUND');
+          }
+          
           return (
             <PositionSlot
               key={position.id}
