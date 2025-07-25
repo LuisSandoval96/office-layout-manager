@@ -597,35 +597,42 @@ export class FirebaseDatabaseManager {
   // Método para corregir datos corruptos de empleados
   public async fixCorruptedEmployeeData(): Promise<boolean> {
     console.log('Fixing corrupted employee data...');
+    console.log('Current employees:', this.state.employees.map(emp => ({ 
+      id: emp.id, 
+      name: emp.name, 
+      position: emp.position,
+      department: emp.department 
+    })));
     
-    // Corregir datos conocidos que están corruptos
-    const corrections = [
-      {
-        name: 'Jossafath Almaguer',
-        correctPosition: 'Analista',
-        correctDepartment: 'Norteamerica'
-      },
-      {
-        name: 'Orlando Alvarado', 
-        correctPosition: 'Analista',
-        correctDepartment: 'Norteamerica'
-      }
-    ];
+    // Buscar empleados con posiciones numéricas (corruptas)
+    const corruptedEmployees = this.state.employees.filter(emp => 
+      typeof emp.position === 'string' && /^\d+$/.test(emp.position)
+    );
+    
+    console.log('Found corrupted employees:', corruptedEmployees.map(emp => ({
+      name: emp.name,
+      currentPosition: emp.position,
+      department: emp.department
+    })));
+    
+    if (corruptedEmployees.length === 0) {
+      console.log('No corrupted employee data found to fix');
+      return false;
+    }
     
     let correctedCount = 0;
     
-    for (const correction of corrections) {
-      const employee = this.state.employees.find(emp => emp.name === correction.name);
-      if (employee) {
-        // Solo corregir si el position es un número o está incorrecto
-        if (typeof employee.position === 'string' && /^\d+$/.test(employee.position)) {
-          console.log(`Correcting ${employee.name}: position "${employee.position}" → "${correction.correctPosition}"`);
-          employee.position = correction.correctPosition;
-          employee.department = correction.correctDepartment;
-          employee.updatedAt = new Date();
-          correctedCount++;
-        }
-      }
+    // Corregir cada empleado con posición numérica
+    for (const employee of corruptedEmployees) {
+      console.log(`Correcting ${employee.name}: position "${employee.position}" → "Analista"`);
+      
+      // Corregir datos
+      employee.position = 'Analista';
+      employee.department = employee.department || 'Norteamerica';
+      employee.updatedAt = new Date();
+      correctedCount++;
+      
+      console.log(`Fixed employee: ${employee.name} - new position: ${employee.position}`);
     }
     
     if (correctedCount > 0) {
@@ -636,10 +643,9 @@ export class FirebaseDatabaseManager {
       await this.saveToFirebase();
       console.log('Employee data corrections saved to Firebase');
       return true;
-    } else {
-      console.log('No corrupted employee data found to fix');
-      return false;
     }
+    
+    return false;
   }
 
   public async assignEmployeeToPosition(employeeId: string, positionId: string, workstationInfo?: WorkstationInfo): Promise<boolean> {

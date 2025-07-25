@@ -69,13 +69,15 @@ function App() {
   // Auto-fix corrupted data when employees change
   useEffect(() => {
     if (employees.length > 0) {
-      const corruptedEmployee = employees.find(emp => 
-        emp.name === 'Jossafath Almaguer' && 
-        (emp.position === '75' || typeof emp.position === 'string' && /^\d+$/.test(emp.position))
+      const corruptedEmployees = employees.filter(emp => 
+        typeof emp.position === 'string' && /^\d+$/.test(emp.position)
       );
       
-      if (corruptedEmployee) {
-        console.log('🔧 AUTO-FIXING corrupted employee data:', corruptedEmployee);
+      if (corruptedEmployees.length > 0) {
+        console.log('🔧 AUTO-FIXING corrupted employee data:', corruptedEmployees.map(emp => ({
+          name: emp.name,
+          corruptedPosition: emp.position
+        })));
         // Usar el método específico del database manager
         db.fixCorruptedEmployeeData().then(result => {
           if (result) {
