@@ -100,8 +100,31 @@ export class FirebaseDatabaseManager {
   }
 
   private convertFirebaseToState(data: any): ApplicationState {
+    // ⚠️ DETECTIVE: Log incoming data from Firebase
+    console.log('🔍 CONVERT FROM FIREBASE: Raw employee data:', data.employees?.map((emp: any) => ({
+      id: emp.id,
+      name: emp.name,
+      position: emp.position,
+      positionType: typeof emp.position,
+      department: emp.department
+    })));
+    
+    const convertedEmployees = data.employees || [];
+    
+    // ⚠️ DETECTIVE: Check if any employee has corrupted position data
+    convertedEmployees.forEach((emp: any) => {
+      if (/^\d+$/.test(emp.position)) {
+        console.error('🚨 CORRUPTION DETECTED in Firebase data:', {
+          name: emp.name,
+          corruptedPosition: emp.position,
+          positionType: typeof emp.position,
+          department: emp.department
+        });
+      }
+    });
+
     return {
-      employees: data.employees || [],
+      employees: convertedEmployees,
       layout: {
         ...data.layout,
         positions: (data.layout?.positions || []).map((pos: any) => ({
@@ -121,6 +144,28 @@ export class FirebaseDatabaseManager {
   }
 
   private convertStateToFirebase(state: ApplicationState): any {
+    // ⚠️ DETECTIVE: Check employees BEFORE sending to Firebase
+    console.log('🔍 CONVERT TO FIREBASE: Employee data being sent:', state.employees.map(emp => ({
+      id: emp.id,
+      name: emp.name,
+      position: emp.position,
+      positionType: typeof emp.position,
+      department: emp.department
+    })));
+    
+    // ⚠️ DETECTIVE: Check for corruption before sending
+    state.employees.forEach(emp => {
+      if (/^\d+$/.test(emp.position)) {
+        console.error('🚨 CORRUPTION DETECTED before sending to Firebase:', {
+          name: emp.name,
+          corruptedPosition: emp.position,
+          positionType: typeof emp.position,
+          department: emp.department
+        });
+        console.error('🚨 This employee will be sent to Firebase with corrupted data!');
+      }
+    });
+
     // Filtrar datos undefined/null para evitar errores de Firestore
     const cleanEmployees = state.employees.filter(emp => emp && emp.id);
     const cleanDepartments = state.departments.filter(dept => dept && dept.id);
@@ -757,10 +802,13 @@ export class FirebaseDatabaseManager {
       })));
       return false;
     }
-    console.log('ASSIGNMENT: Found employee:', { 
+    
+    // ⚠️ DETECTIVE MODE: Log employee data BEFORE any changes
+    console.log('🕵️ BEFORE ASSIGNMENT - Employee data:', { 
       id: employee.id, 
       name: employee.name, 
       position: employee.position,
+      positionType: typeof employee.position,
       department: employee.department 
     });
 
@@ -790,6 +838,10 @@ export class FirebaseDatabaseManager {
       currentEmployeeId: position.employeeId,
       isOccupied: position.isOccupied
     });
+
+    // ⚠️ CRITICAL: Double-check that we're NOT modifying employee.position
+    console.log('🚨 CRITICAL CHECK: About to modify position data, employee.position should NOT change');
+    console.log('🚨 Employee.position BEFORE position assignment:', employee.position);
 
     // Validar que los datos son correctos
     if (!employee.id || !employee.name) {
@@ -826,11 +878,26 @@ export class FirebaseDatabaseManager {
       }
     }
 
+    // ⚠️ DETECTIVE: Log employee.position AFTER removing from previous but BEFORE new assignment
+    console.log('🕵️ AFTER removing from previous position - Employee.position:', employee.position);
+
     // Asignar empleado a nueva posición
     position.employeeId = employeeId;
     position.isOccupied = true;
-    // NO modificar employee.position ya que contiene el cargo (Analista, Supervisor, etc.)
+    
+    // ⚠️ CRITICAL: We should NEVER modify employee.position here!
+    // employee.position should remain as job title (Analista, Supervisor, etc.)
+    // position.number or position.deskName is the desk location (73, L4, etc.)
+    
+    console.log('🚨 AFTER position assignment - Employee.position should still be:', employee.position);
+    console.log('🚨 Position.number (desk location):', position.number);
+    console.log('🚨 Position.deskName (desk name):', position.deskName);
+    
+    // ONLY update the timestamp
     employee.updatedAt = new Date();
+
+    // ⚠️ DETECTIVE: Log employee.position AFTER timestamp update
+    console.log('🕵️ AFTER timestamp update - Employee.position:', employee.position);
 
     // Guardar información del workstation si se proporciona
     if (workstationInfo) {
@@ -841,6 +908,15 @@ export class FirebaseDatabaseManager {
       };
     }
 
+    // ⚠️ DETECTIVE: Final check before saving
+    console.log('🕵️ FINAL CHECK before save - Employee data:', {
+      id: employee.id,
+      name: employee.name,
+      position: employee.position, // This should still be "Analista"
+      positionType: typeof employee.position,
+      department: employee.department
+    });
+
     console.log('ASSIGNMENT: Assignment completed in local state:', {
       positionId: position.id,
       positionNumber: position.number,
@@ -849,7 +925,7 @@ export class FirebaseDatabaseManager {
       positionOccupied: position.isOccupied,
       employeeId: employee.id,
       employeeName: employee.name,
-      employeePosition: employee.position,
+      employeeJobTitle: employee.position, // This is the job title, NOT desk number
       employeeDepartment: employee.department,
       hasWorkstationInfo: !!position.workstationInfo
     });
@@ -867,6 +943,7 @@ export class FirebaseDatabaseManager {
     this.addToHistory('assigned', `${employee.name} asignado a posición ${position.deskName || position.number}`);
     
     console.log('ASSIGNMENT: About to save to Firebase...');
+    console.log('🚨 PRE-SAVE: Employee.position =', employee.position);
     console.log('ASSIGNMENT: All assigned positions before save:', 
       this.state.layout.positions.filter(p => p.employeeId).map(p => ({
         id: p.id,
@@ -880,6 +957,9 @@ export class FirebaseDatabaseManager {
     try {
       await this.saveToFirebase();
       console.log('ASSIGNMENT: Firebase save completed successfully');
+      
+      // ⚠️ DETECTIVE: Check if employee.position got corrupted during save
+      console.log('🚨 POST-SAVE: Employee.position =', employee.position);
       
       // Verificar que los datos se mantuvieron después del guardado
       const finalPosition = this.state.layout.positions.find(p => p.id === positionId);
