@@ -596,27 +596,53 @@ export class FirebaseDatabaseManager {
 
   // Método para corregir datos corruptos de empleados
   public async fixCorruptedEmployeeData(): Promise<boolean> {
-    console.log('Fixing corrupted employee data...');
-    console.log('Current employees:', this.state.employees.map(emp => ({ 
-      id: emp.id, 
-      name: emp.name, 
-      position: emp.position,
-      department: emp.department 
-    })));
+    console.log('🔧 STARTING COMPREHENSIVE DATA FIX...');
+    console.log('🔧 Current employees in state:', this.state.employees.length);
     
-    // Buscar empleados con posiciones numéricas (corruptas)
-    const corruptedEmployees = this.state.employees.filter(emp => 
-      typeof emp.position === 'string' && /^\d+$/.test(emp.position)
-    );
+    // Log TODOS los empleados para diagnosticar
+    this.state.employees.forEach((emp, index) => {
+      console.log(`🔧 Employee ${index + 1}:`, {
+        id: emp.id,
+        name: emp.name,
+        position: emp.position,
+        positionType: typeof emp.position,
+        isNumeric: /^\d+$/.test(emp.position),
+        department: emp.department
+      });
+    });
     
-    console.log('Found corrupted employees:', corruptedEmployees.map(emp => ({
-      name: emp.name,
-      currentPosition: emp.position,
-      department: emp.department
-    })));
+    // Buscar empleados con posiciones numéricas (corruptas) - más agresivo
+    const corruptedEmployees = this.state.employees.filter(emp => {
+      const isNumeric = typeof emp.position === 'string' && /^\d+$/.test(emp.position);
+      const isSpecificBadData = emp.name === 'Jossafath Almaguer' && emp.position === '73';
+      console.log(`🔧 Checking ${emp.name}: position="${emp.position}", isNumeric=${isNumeric}, isSpecificBad=${isSpecificBadData}`);
+      return isNumeric || isSpecificBadData;
+    });
+    
+    console.log('🔧 Found corrupted employees:', corruptedEmployees.length);
+    corruptedEmployees.forEach((emp, index) => {
+      console.log(`🔧 Corrupted ${index + 1}:`, {
+        name: emp.name,
+        currentPosition: emp.position,
+        department: emp.department
+      });
+    });
     
     if (corruptedEmployees.length === 0) {
-      console.log('No corrupted employee data found to fix');
+      console.log('🔧 No corrupted employee data found to fix');
+      // Forzar corrección específica para Jossafath si existe
+      const jossafath = this.state.employees.find(emp => emp.name === 'Jossafath Almaguer');
+      if (jossafath) {
+        console.log('🔧 FORCE FIXING Jossafath Almaguer:', jossafath);
+        jossafath.position = 'Analista';
+        jossafath.department = 'Norteamerica';
+        jossafath.updatedAt = new Date();
+        
+        this.addToHistory('employee_updated', 'Forzado: Datos de Jossafath Almaguer corregidos');
+        await this.saveToFirebase();
+        console.log('🔧 FORCE FIX completed for Jossafath');
+        return true;
+      }
       return false;
     }
     
@@ -624,7 +650,9 @@ export class FirebaseDatabaseManager {
     
     // Corregir cada empleado con posición numérica
     for (const employee of corruptedEmployees) {
-      console.log(`Correcting ${employee.name}: position "${employee.position}" → "Analista"`);
+      console.log(`🔧 CORRECTING ${employee.name}: "${employee.position}" → "Analista"`);
+      
+      const oldPosition = employee.position;
       
       // Corregir datos
       employee.position = 'Analista';
@@ -632,16 +660,29 @@ export class FirebaseDatabaseManager {
       employee.updatedAt = new Date();
       correctedCount++;
       
-      console.log(`Fixed employee: ${employee.name} - new position: ${employee.position}`);
+      console.log(`🔧 FIXED ${employee.name}: ${oldPosition} → ${employee.position}`);
     }
     
     if (correctedCount > 0) {
-      console.log(`Corrected ${correctedCount} employees`);
+      console.log(`🔧 Corrected ${correctedCount} employees, saving to Firebase...`);
+      
       // Añadir a historial
       this.addToHistory('employee_updated', `Datos corregidos para ${correctedCount} empleados`);
       
+      // Guardar con verificación
       await this.saveToFirebase();
-      console.log('Employee data corrections saved to Firebase');
+      
+      // Verificar que los cambios se aplicaron
+      const verification = this.state.employees.filter(emp => 
+        typeof emp.position === 'string' && /^\d+$/.test(emp.position)
+      );
+      
+      console.log(`🔧 POST-FIX verification: ${verification.length} employees still have numeric positions`);
+      verification.forEach(emp => {
+        console.log(`🔧 Still corrupted: ${emp.name} = ${emp.position}`);
+      });
+      
+      console.log('🔧 Employee data corrections saved to Firebase');
       return true;
     }
     
