@@ -30,7 +30,11 @@ interface StatisticsData {
   };
 }
 
-export function Statistics() {
+interface StatisticsProps {
+  onFixData: () => Promise<void>;
+}
+
+export function Statistics({ onFixData }: StatisticsProps) {
   const [stats, setStats] = useState<StatisticsData | null>(null);
   const [history, setHistory] = useState<any[]>([]);
   const [showExportModal, setShowExportModal] = useState(false);
@@ -157,6 +161,9 @@ export function Statistics() {
       <div className="panel-header">
         <h2>📊 Estadísticas y Reportes</h2>
         <div className="header-actions">
+          <button className="fix-data-button" onClick={onFixData}>
+            🔧 Fix Data
+          </button>
           <button className="export-button" onClick={handleExportData}>
             <Download size={16} />
             Exportar

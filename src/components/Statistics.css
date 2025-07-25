@@ -74,6 +74,25 @@
   background: #dc2626;
 }
 
+.fix-data-button {
+  background: #f97316;
+  color: white;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: 500;
+  font-size: 14px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  transition: background-color 0.2s;
+}
+
+.fix-data-button:hover {
+  background: #ea580c;
+}
+
 .loading {
   display: flex;
   justify-content: center;

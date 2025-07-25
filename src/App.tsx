@@ -297,21 +297,6 @@ function App() {
           >
             📊 Estadísticas
           </button>
-          <button 
-            onClick={fixCorruptedData}
-            style={{ 
-              padding: '8px 16px', 
-              backgroundColor: '#f44336', 
-              color: 'white', 
-              border: 'none', 
-              borderRadius: '4px',
-              fontSize: '14px',
-              fontWeight: 'bold',
-              marginLeft: '20px'
-            }}
-          >
-            🔧 Fix Data
-          </button>
         </nav>
       </header>
 
@@ -355,7 +340,7 @@ function App() {
           )}
 
           {activeTab === 'stats' && (
-            <Statistics />
+            <Statistics onFixData={fixCorruptedData} />
           )}
 
           <DragOverlay>
