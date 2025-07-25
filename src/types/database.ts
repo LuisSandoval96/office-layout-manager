@@ -89,11 +89,11 @@ export interface FilterOptions {
 
 // Constantes predefinidas
 export const DEFAULT_DEPARTMENTS: Department[] = [
-  { id: '1', name: 'Norteamerica', color: '#3B82F6' },
-  { id: '2', name: 'Sudamerica', color: '#10B981' },
-  { id: '3', name: 'QSMX', color: '#8B5CF6' },
-  { id: '4', name: 'P & Supply Chain', color: '#F59E0B' },
-  { id: '5', name: 'Ambiental', color: '#059669' }
+  { id: '1', name: 'Norteamerica', color: '#3B82F6', description: 'Operaciones Norte América' },
+  { id: '2', name: 'Sudamerica', color: '#10B981', description: 'Operaciones Sud América' },
+  { id: '3', name: 'QSMX', color: '#8B5CF6', description: 'Quality Systems México' },
+  { id: '4', name: 'P & Supply Chain', color: '#F59E0B', description: 'Procurement & Supply Chain' },
+  { id: '5', name: 'Ambiental', color: '#059669', description: 'Gestión Ambiental' }
 ];
 
 export const POSITION_TYPES = [

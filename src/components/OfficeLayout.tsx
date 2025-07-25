@@ -1,11 +1,12 @@
 import { useDroppable } from '@dnd-kit/core';
 import { EmployeeCard } from './EmployeeCard';
-import type { Employee, OfficePosition } from '../types/database';
+import type { Employee, OfficePosition, Department } from '../types/database';
 import './OfficeLayout.css';
 
 interface OfficeLayoutProps {
   positions: OfficePosition[];
   employees: Employee[];
+  departments: Department[];
   onUnassignEmployee: (employeeId: string) => void;
   onShowWorkstationDetails?: (employee: Employee, position: OfficePosition) => void;
 }
@@ -13,11 +14,12 @@ interface OfficeLayoutProps {
 interface PositionSlotProps {
   position: OfficePosition;
   employee?: Employee;
+  departments: Department[];
   onUnassignEmployee: (employeeId: string) => void;
   onShowWorkstationDetails?: (employee: Employee, position: OfficePosition) => void;
 }
 
-function PositionSlot({ position, employee, onUnassignEmployee, onShowWorkstationDetails }: PositionSlotProps) {
+function PositionSlot({ position, employee, departments, onUnassignEmployee, onShowWorkstationDetails }: PositionSlotProps) {
   const { setNodeRef, isOver } = useDroppable({
     id: position.id,
   });
@@ -42,13 +44,14 @@ function PositionSlot({ position, employee, onUnassignEmployee, onShowWorkstatio
           showUnassignButton={true}
           position={position}
           onShowDetails={onShowWorkstationDetails}
+          departments={departments}
         />
       )}
     </div>
   );
 }
 
-export function OfficeLayout({ positions, employees, onUnassignEmployee, onShowWorkstationDetails }: OfficeLayoutProps) {
+export function OfficeLayout({ positions, employees, departments, onUnassignEmployee, onShowWorkstationDetails }: OfficeLayoutProps) {
   // Calcular dimensiones del layout
   const maxX = Math.max(...positions.map(p => p.x + p.width));
   const maxY = Math.max(...positions.map(p => p.y + p.height));
@@ -97,6 +100,7 @@ export function OfficeLayout({ positions, employees, onUnassignEmployee, onShowW
               key={position.id}
               position={position}
               employee={employee}
+              departments={departments}
               onUnassignEmployee={onUnassignEmployee}
               onShowWorkstationDetails={onShowWorkstationDetails}
             />

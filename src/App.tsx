@@ -4,16 +4,18 @@ import type { DragEndEvent, DragStartEvent } from '@dnd-kit/core';
 import { OfficeLayout } from './components/OfficeLayout';
 import { EmployeePanel } from './components/EmployeePanel';
 import { EmployeeCard } from './components/EmployeeCard';
+import { DepartmentLegend } from './components/DepartmentLegend';
 import { Statistics } from './components/Statistics';
 import { WorkstationInfoModal } from './components/WorkstationInfoModal';
 import { WorkstationDetailsModal } from './components/WorkstationDetailsModal';
 import getDatabaseManager from './services/DatabaseWrapper';
-import type { Employee, OfficePosition, WorkstationInfo } from './types/database';
+import type { Employee, OfficePosition, WorkstationInfo, Department } from './types/database';
 import './App.css';
 
 function App() {
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [positions, setPositions] = useState<OfficePosition[]>([]);
+  const [departments, setDepartments] = useState<Department[]>([]);
   const [draggedEmployee, setDraggedEmployee] = useState<Employee | null>(null);
   const [activeTab, setActiveTab] = useState<'layout' | 'employees' | 'stats'>('layout');
   
@@ -71,6 +73,7 @@ function App() {
       
       setEmployees(state.employees);
       setPositions(state.layout.positions);
+      setDepartments(state.departments);
       
       // Log de empleados asignados
       const assignedEmployees = state.layout.positions
@@ -115,6 +118,7 @@ function App() {
   const loadData = () => {
     setEmployees(db.getEmployees());
     setPositions(db.getPositions());
+    setDepartments(db.getDepartments());
   };
 
   // Función debug para corregir datos corruptos
@@ -327,6 +331,7 @@ function App() {
           {activeTab === 'layout' && (
             <div className="layout-view">
               <div className="layout-sidebar">
+                <DepartmentLegend departments={departments} />
                 <h3>Empleados Disponibles</h3>
                 <div className="available-employees">
                   {employees.filter(emp => !positions.find(pos => pos.employeeId === emp.id)).map(employee => (
@@ -335,6 +340,7 @@ function App() {
                       employee={employee} 
                       isDraggable={true}
                       onUnassign={() => {}}
+                      departments={departments}
                     />
                   ))}
                 </div>
@@ -343,6 +349,7 @@ function App() {
                 <OfficeLayout 
                   positions={positions}
                   employees={employees}
+                  departments={departments}
                   onUnassignEmployee={handleUnassignEmployee}
                   onShowWorkstationDetails={handleShowWorkstationDetails}
                 />
@@ -354,6 +361,7 @@ function App() {
             <EmployeePanel
               employees={employees}
               positions={positions}
+              departments={departments}
               onEmployeeCreate={handleEmployeeCreate}
               onEmployeeUpdate={handleEmployeeUpdate}
               onEmployeeDelete={handleEmployeeDelete}
@@ -371,6 +379,7 @@ function App() {
                 employee={draggedEmployee} 
                 isDraggable={false}
                 onUnassign={() => {}}
+                departments={departments}
               />
             )}
           </DragOverlay>

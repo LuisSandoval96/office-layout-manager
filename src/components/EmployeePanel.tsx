@@ -1,13 +1,15 @@
 import { useState } from 'react';
 import { Plus, Edit2, Trash2, Search, Filter } from 'lucide-react';
 import { EmployeeCard } from './EmployeeCard';
-import type { Employee, OfficePosition } from '../types/database';
-import { DEFAULT_DEPARTMENTS, POSITION_TYPES } from '../types/database';
+import { DepartmentLegend } from './DepartmentLegend';
+import type { Employee, OfficePosition, Department } from '../types/database';
+import { POSITION_TYPES } from '../types/database';
 import './EmployeePanel.css';
 
 interface EmployeePanelProps {
   employees: Employee[];
   positions: OfficePosition[];
+  departments: Department[];
   onEmployeeCreate: (data: { name: string; department: string; position: string }) => void;
   onEmployeeUpdate: (id: string, data: { name: string; department: string; position: string }) => void;
   onEmployeeDelete: (id: string) => void;
@@ -23,6 +25,7 @@ interface EmployeeFormData {
 export function EmployeePanel({ 
   employees, 
   positions, 
+  departments,
   onEmployeeCreate, 
   onEmployeeUpdate, 
   onEmployeeDelete, 
@@ -98,6 +101,8 @@ export function EmployeePanel({
         </button>
       </div>
 
+      <DepartmentLegend departments={departments} />
+
       {/* Filtros y búsqueda */}
       <div className="filters-section">
         <div className="search-box">
@@ -117,7 +122,7 @@ export function EmployeePanel({
             onChange={(e) => setDepartmentFilter(e.target.value)}
           >
             <option value="">Todos los departamentos</option>
-            {DEFAULT_DEPARTMENTS.map(dept => (
+            {departments.map(dept => (
               <option key={dept.id} value={dept.name}>{dept.name}</option>
             ))}
           </select>
@@ -159,7 +164,7 @@ export function EmployeePanel({
                 required
               >
                 <option value="">Seleccionar departamento</option>
-                {DEFAULT_DEPARTMENTS.map(dept => (
+                {departments.map(dept => (
                   <option key={dept.id} value={dept.name}>{dept.name}</option>
                 ))}
               </select>
@@ -204,6 +209,7 @@ export function EmployeePanel({
                 isDraggable={false}
                 onUnassign={onUnassignEmployee}
                 showUnassignButton={!!assignedPosition}
+                departments={departments}
               />
               
               <div className="employee-actions">
