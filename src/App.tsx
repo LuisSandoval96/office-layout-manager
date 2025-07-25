@@ -76,7 +76,14 @@ function App() {
       
       if (corruptedEmployee) {
         console.log('🔧 AUTO-FIXING corrupted employee data:', corruptedEmployee);
-        fixCorruptedData();
+        // Usar el método específico del database manager
+        db.fixCorruptedEmployeeData().then(result => {
+          if (result) {
+            console.log('✅ Auto-fix completed successfully');
+          } else {
+            console.log('❌ Auto-fix found no data to correct');
+          }
+        });
       }
     }
   }, [employees]);
@@ -92,32 +99,12 @@ function App() {
     console.log('Current employees:', employees);
     
     try {
-      // Buscar empleado con cargo corrupto
-      const corruptedEmployee = employees.find(emp => 
-        emp.name === 'Jossafath Almaguer' && 
-        (emp.position === '75' || typeof emp.position === 'string' && /^\d+$/.test(emp.position))
-      );
+      const result = await db.fixCorruptedEmployeeData();
       
-      if (corruptedEmployee) {
-        console.log('Found corrupted employee:', corruptedEmployee);
-        console.log('Correcting position from', corruptedEmployee.position, 'to Analista');
-        
-        // Usar el método updateEmployee para corregir los datos
-        const result = await db.updateEmployee(corruptedEmployee.id, {
-          name: 'Jossafath Almaguer',
-          department: 'Norteamerica',
-          position: 'Analista'
-        });
-        
-        if (result) {
-          console.log('Employee data has been corrected!');
-          alert('Datos de empleados corregidos exitosamente!');
-          // Forzar actualización de datos
-          loadData();
-        } else {
-          console.log('Failed to correct employee data');
-          alert('Error al corregir datos del empleado');
-        }
+      if (result) {
+        console.log('Employee data has been corrected!');
+        alert('Datos de empleados corregidos exitosamente!');
+        // Los datos se actualizan automáticamente a través de Firebase
       } else {
         console.log('No corrupted employee data found');
         alert('No se encontraron datos corruptos para corregir');
