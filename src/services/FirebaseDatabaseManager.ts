@@ -203,6 +203,16 @@ export class FirebaseDatabaseManager {
         return null;
       }
       
+      // Handle Date objects - convert to Timestamp for Firebase
+      if (obj instanceof Date) {
+        return Timestamp.fromDate(obj);
+      }
+      
+      // Handle Timestamp objects - keep as is
+      if (obj && typeof obj === 'object' && obj.toDate && typeof obj.toDate === 'function') {
+        return obj; // Already a Firebase Timestamp
+      }
+      
       if (Array.isArray(obj)) {
         return obj.filter(item => item !== undefined).map(deepCleanObject);
       }
@@ -223,14 +233,24 @@ export class FirebaseDatabaseManager {
     // Limpiar empleados más agresivamente
     const cleanEmployees = state.employees
       .filter(emp => emp && emp.id && emp.name)
-      .map(emp => deepCleanObject({
-        id: emp.id,
-        name: emp.name || 'Sin nombre',
-        department: emp.department || 'General',
-        position: emp.position || 'Empleado',
-        createdAt: emp.createdAt || new Date(),
-        updatedAt: emp.updatedAt || new Date()
-      }));
+      .map(emp => {
+        const cleanEmp: any = {
+          id: emp.id,
+          name: emp.name || 'Sin nombre',
+          department: emp.department || 'General',
+          position: emp.position || 'Empleado'
+        };
+        
+        // Solo agregar timestamps si existen
+        if (emp.createdAt) {
+          cleanEmp.createdAt = emp.createdAt instanceof Date ? Timestamp.fromDate(emp.createdAt) : emp.createdAt;
+        }
+        if (emp.updatedAt) {
+          cleanEmp.updatedAt = emp.updatedAt instanceof Date ? Timestamp.fromDate(emp.updatedAt) : emp.updatedAt;
+        }
+        
+        return deepCleanObject(cleanEmp);
+      });
 
     const cleanDepartments = state.departments
       .filter(dept => dept && dept.id)
@@ -238,7 +258,13 @@ export class FirebaseDatabaseManager {
       
     const cleanHistory = state.history
       .filter(record => record && record.timestamp)
-      .map(record => deepCleanObject(record));
+      .map(record => {
+        const cleanRecord: any = { ...record };
+        if (cleanRecord.timestamp instanceof Date) {
+          cleanRecord.timestamp = Timestamp.fromDate(cleanRecord.timestamp);
+        }
+        return deepCleanObject(cleanRecord);
+      });
     
     // Verificar asignaciones antes de guardar con más detalle
     const assignedPositions = state.layout.positions.filter(pos => pos.employeeId);
@@ -268,10 +294,13 @@ export class FirebaseDatabaseManager {
       
       // Solo agregar workstationInfo si existe y está completo
       if (pos.workstationInfo && Object.keys(pos.workstationInfo).length > 0) {
-        cleanPos.workstationInfo = deepCleanObject({
-          ...pos.workstationInfo,
-          assignedDate: pos.workstationInfo.assignedDate || new Date()
-        });
+        const cleanWorkstation: any = { ...pos.workstationInfo };
+        if (cleanWorkstation.assignedDate instanceof Date) {
+          cleanWorkstation.assignedDate = Timestamp.fromDate(cleanWorkstation.assignedDate);
+        } else if (!cleanWorkstation.assignedDate) {
+          cleanWorkstation.assignedDate = Timestamp.fromDate(new Date());
+        }
+        cleanPos.workstationInfo = deepCleanObject(cleanWorkstation);
       }
       
       return cleanPos;
@@ -292,10 +321,7 @@ export class FirebaseDatabaseManager {
         updatedAt: Timestamp.fromDate(new Date())
       },
       departments: cleanDepartments,
-      history: cleanHistory.map(record => ({
-        ...record,
-        timestamp: Timestamp.fromDate(record.timestamp)
-      })),
+      history: cleanHistory,
       lastUpdated: serverTimestamp()
     };
 
