@@ -607,7 +607,8 @@ export class FirebaseDatabaseManager {
         position: emp.position,
         positionType: typeof emp.position,
         isNumeric: /^\d+$/.test(emp.position),
-        department: emp.department
+        department: emp.department,
+        hasUndefined: Object.values(emp).some(val => val === undefined)
       });
     });
     
@@ -615,8 +616,9 @@ export class FirebaseDatabaseManager {
     const corruptedEmployees = this.state.employees.filter(emp => {
       const isNumeric = typeof emp.position === 'string' && /^\d+$/.test(emp.position);
       const isSpecificBadData = emp.name === 'Jossafath Almaguer' && emp.position === '73';
-      console.log(`🔧 Checking ${emp.name}: position="${emp.position}", isNumeric=${isNumeric}, isSpecificBad=${isSpecificBadData}`);
-      return isNumeric || isSpecificBadData;
+      const hasUndefinedValues = Object.values(emp).some(val => val === undefined);
+      console.log(`🔧 Checking ${emp.name}: position="${emp.position}", isNumeric=${isNumeric}, isSpecificBad=${isSpecificBadData}, hasUndefined=${hasUndefinedValues}`);
+      return isNumeric || isSpecificBadData || hasUndefinedValues;
     });
     
     console.log('🔧 Found corrupted employees:', corruptedEmployees.length);
@@ -624,15 +626,44 @@ export class FirebaseDatabaseManager {
       console.log(`🔧 Corrupted ${index + 1}:`, {
         name: emp.name,
         currentPosition: emp.position,
-        department: emp.department
+        department: emp.department,
+        undefinedFields: Object.entries(emp).filter(([, val]) => val === undefined).map(([key]) => key)
       });
     });
     
-    if (corruptedEmployees.length === 0) {
+    // Primero, limpiar TODOS los empleados de valores undefined para evitar errores de Firebase
+    let cleanedCount = 0;
+    this.state.employees.forEach(emp => {
+      let wasModified = false;
+      
+      // Limpiar campos undefined que causan errores de Firebase
+      if (emp.position === undefined || emp.position === null) {
+        emp.position = 'Empleado';
+        wasModified = true;
+        console.log(`🔧 CLEANED undefined position for ${emp.name}`);
+      }
+      
+      if (emp.department === undefined || emp.department === null) {
+        emp.department = 'General';
+        wasModified = true;
+        console.log(`🔧 CLEANED undefined department for ${emp.name}`);
+      }
+      
+      if (wasModified) {
+        emp.updatedAt = new Date();
+        cleanedCount++;
+      }
+    });
+    
+    if (cleanedCount > 0) {
+      console.log(`🔧 Cleaned ${cleanedCount} employees from undefined values`);
+    }
+    
+    if (corruptedEmployees.length === 0 && cleanedCount === 0) {
       console.log('🔧 No corrupted employee data found to fix');
       // Forzar corrección específica para Jossafath si existe
       const jossafath = this.state.employees.find(emp => emp.name === 'Jossafath Almaguer');
-      if (jossafath) {
+      if (jossafath && (jossafath.position === '73' || /^\d+$/.test(jossafath.position))) {
         console.log('🔧 FORCE FIXING Jossafath Almaguer:', jossafath);
         jossafath.position = 'Analista';
         jossafath.department = 'Norteamerica';
@@ -654,7 +685,7 @@ export class FirebaseDatabaseManager {
       
       const oldPosition = employee.position;
       
-      // Corregir datos
+      // Corregir datos completamente
       employee.position = 'Analista';
       employee.department = employee.department || 'Norteamerica';
       employee.updatedAt = new Date();
@@ -663,26 +694,43 @@ export class FirebaseDatabaseManager {
       console.log(`🔧 FIXED ${employee.name}: ${oldPosition} → ${employee.position}`);
     }
     
-    if (correctedCount > 0) {
-      console.log(`🔧 Corrected ${correctedCount} employees, saving to Firebase...`);
+    if (correctedCount > 0 || cleanedCount > 0) {
+      console.log(`🔧 Corrected ${correctedCount} employees and cleaned ${cleanedCount} employees, saving to Firebase...`);
       
       // Añadir a historial
-      this.addToHistory('employee_updated', `Datos corregidos para ${correctedCount} empleados`);
+      this.addToHistory('employee_updated', `Datos corregidos para ${correctedCount} empleados y limpiados ${cleanedCount} empleados`);
       
-      // Guardar con verificación
-      await this.saveToFirebase();
+      // Guardar con verificación más robusta
+      try {
+        await this.saveToFirebase();
+        console.log('🔧 Data saved successfully to Firebase');
+      } catch (firebaseError) {
+        console.error('🔧 Firebase save error:', firebaseError);
+        console.log('🔧 Attempting alternative save method...');
+        
+        // Método alternativo de guardado - sobrescribir completamente
+        try {
+          await this.saveToFirebase();
+          console.log('🔧 Alternative save successful');
+        } catch (alternativeError) {
+          console.error('🔧 Alternative save also failed:', alternativeError);
+        }
+      }
       
       // Verificar que los cambios se aplicaron
-      const verification = this.state.employees.filter(emp => 
-        typeof emp.position === 'string' && /^\d+$/.test(emp.position)
-      );
+      setTimeout(() => {
+        const verification = this.state.employees.filter(emp => 
+          typeof emp.position === 'string' && /^\d+$/.test(emp.position)
+        );
+        
+        console.log(`🔧 POST-FIX verification: ${verification.length} employees still have numeric positions`);
+        verification.forEach(emp => {
+          console.log(`🔧 Still corrupted: ${emp.name} = ${emp.position}`);
+        });
+        
+        console.log('🔧 Employee data corrections completed');
+      }, 2000);
       
-      console.log(`🔧 POST-FIX verification: ${verification.length} employees still have numeric positions`);
-      verification.forEach(emp => {
-        console.log(`🔧 Still corrupted: ${emp.name} = ${emp.position}`);
-      });
-      
-      console.log('🔧 Employee data corrections saved to Firebase');
       return true;
     }
     
