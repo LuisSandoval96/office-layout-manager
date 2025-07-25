@@ -141,8 +141,7 @@ export class FirebaseDatabaseManager {
     // Asegurar que las posiciones se mantengan intactas
     const cleanPositions = state.layout.positions.map(pos => ({
       ...pos,
-      // Asegurar que los timestamps sean válidos
-      assignedDate: pos.assignedDate || null,
+      // Asegurar que workstationInfo tenga timestamps válidos
       workstationInfo: pos.workstationInfo ? {
         ...pos.workstationInfo,
         assignedDate: pos.workstationInfo.assignedDate || new Date()
