@@ -66,6 +66,21 @@ function App() {
     };
   }, []);
 
+  // Auto-fix corrupted data when employees change
+  useEffect(() => {
+    if (employees.length > 0) {
+      const corruptedEmployee = employees.find(emp => 
+        emp.name === 'Jossafath Almaguer' && 
+        (emp.position === '75' || typeof emp.position === 'string' && /^\d+$/.test(emp.position))
+      );
+      
+      if (corruptedEmployee) {
+        console.log('🔧 AUTO-FIXING corrupted employee data:', corruptedEmployee);
+        fixCorruptedData();
+      }
+    }
+  }, [employees]);
+
   const loadData = () => {
     setEmployees(db.getEmployees());
     setPositions(db.getPositions());
