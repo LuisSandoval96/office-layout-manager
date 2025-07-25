@@ -197,10 +197,48 @@ export class FirebaseDatabaseManager {
       }
     });
 
-    // Filtrar datos undefined/null para evitar errores de Firestore
-    const cleanEmployees = state.employees.filter(emp => emp && emp.id);
-    const cleanDepartments = state.departments.filter(dept => dept && dept.id);
-    const cleanHistory = state.history.filter(record => record && record.timestamp);
+    // 🔧 DEEP CLEAN: Remove ALL undefined values recursively
+    const deepCleanObject = (obj: any): any => {
+      if (obj === null || obj === undefined) {
+        return null;
+      }
+      
+      if (Array.isArray(obj)) {
+        return obj.filter(item => item !== undefined).map(deepCleanObject);
+      }
+      
+      if (typeof obj === 'object') {
+        const cleaned: any = {};
+        for (const [key, value] of Object.entries(obj)) {
+          if (value !== undefined) {
+            cleaned[key] = deepCleanObject(value);
+          }
+        }
+        return cleaned;
+      }
+      
+      return obj;
+    };
+
+    // Limpiar empleados más agresivamente
+    const cleanEmployees = state.employees
+      .filter(emp => emp && emp.id && emp.name)
+      .map(emp => deepCleanObject({
+        id: emp.id,
+        name: emp.name || 'Sin nombre',
+        department: emp.department || 'General',
+        position: emp.position || 'Empleado',
+        createdAt: emp.createdAt || new Date(),
+        updatedAt: emp.updatedAt || new Date()
+      }));
+
+    const cleanDepartments = state.departments
+      .filter(dept => dept && dept.id)
+      .map(dept => deepCleanObject(dept));
+      
+    const cleanHistory = state.history
+      .filter(record => record && record.timestamp)
+      .map(record => deepCleanObject(record));
     
     // Verificar asignaciones antes de guardar con más detalle
     const assignedPositions = state.layout.positions.filter(pos => pos.employeeId);
@@ -214,25 +252,42 @@ export class FirebaseDatabaseManager {
       isOccupied: pos.isOccupied
     })));
     
-    // Asegurar que las posiciones se mantengan intactas
-    const cleanPositions = state.layout.positions.map(pos => ({
-      ...pos,
-      // Asegurar que workstationInfo tenga timestamps válidos
-      workstationInfo: pos.workstationInfo ? {
-        ...pos.workstationInfo,
-        assignedDate: pos.workstationInfo.assignedDate || new Date()
-      } : undefined
-    }));
+    // Limpiar posiciones de manera más agresiva
+    const cleanPositions = state.layout.positions.map(pos => {
+      const cleanPos: any = {
+        id: pos.id,
+        number: pos.number,
+        x: pos.x,
+        y: pos.y,
+        width: pos.width,
+        height: pos.height,
+        employeeId: pos.employeeId || null,
+        isOccupied: pos.isOccupied || false,
+        deskName: pos.deskName || `Desk-${pos.number}`
+      };
+      
+      // Solo agregar workstationInfo si existe y está completo
+      if (pos.workstationInfo && Object.keys(pos.workstationInfo).length > 0) {
+        cleanPos.workstationInfo = deepCleanObject({
+          ...pos.workstationInfo,
+          assignedDate: pos.workstationInfo.assignedDate || new Date()
+        });
+      }
+      
+      return cleanPos;
+    });
     
     console.log('CONVERT: Clean positions count:', cleanPositions.length);
     console.log('CONVERT: Clean assigned positions:', cleanPositions.filter(p => p.employeeId).length);
     
-    return {
+    const firebaseData = {
       employees: cleanEmployees,
       layout: {
-        id: state.layout.id,
-        name: state.layout.name,
-        positions: cleanPositions, // Usar las posiciones limpias directamente
+        id: state.layout.id || 'layout-1',
+        name: state.layout.name || 'Oficina Principal',
+        width: state.layout.width || 1200,
+        height: state.layout.height || 1900,
+        positions: cleanPositions,
         createdAt: Timestamp.fromDate(state.layout.createdAt || new Date()),
         updatedAt: Timestamp.fromDate(new Date())
       },
@@ -243,12 +298,45 @@ export class FirebaseDatabaseManager {
       })),
       lastUpdated: serverTimestamp()
     };
+
+    // 🔧 FINAL VALIDATION: Check for any remaining undefined values
+    const validateNoUndefined = (obj: any, path = ''): boolean => {
+      if (obj === undefined) {
+        console.error(`🚨 UNDEFINED FOUND at path: ${path}`);
+        return false;
+      }
+      
+      if (Array.isArray(obj)) {
+        return obj.every((item, index) => validateNoUndefined(item, `${path}[${index}]`));
+      }
+      
+      if (obj && typeof obj === 'object') {
+        return Object.entries(obj).every(([key, value]) => 
+          validateNoUndefined(value, path ? `${path}.${key}` : key)
+        );
+      }
+      
+      return true;
+    };
+
+    const isValid = validateNoUndefined(firebaseData);
+    if (!isValid) {
+      console.error('🚨 FIREBASE DATA CONTAINS UNDEFINED VALUES - CLEANING AGAIN');
+      return deepCleanObject(firebaseData);
+    }
+
+    console.log('✅ FIREBASE DATA IS CLEAN - No undefined values found');
+    return firebaseData;
   }
 
   private async saveToFirebase(): Promise<void> {
     try {
       console.log('SAVE: Starting save to Firebase...');
       const docRef = doc(db, COLLECTION_NAME, DOCUMENT_ID);
+      
+      // 🔧 CRITICAL: Clean state before conversion
+      console.log('SAVE: Cleaning state before conversion...');
+      
       const firebaseData = this.convertStateToFirebase(this.state);
       
       console.log('SAVE: Firebase data to save:', {
@@ -277,11 +365,25 @@ export class FirebaseDatabaseManager {
         department: e.department
       })));
       
-      // Usar setDoc para asegurar que todos los datos se guardan completamente
-      console.log('SAVE: Using setDoc with merge:true to save data...');
-      await setDoc(docRef, firebaseData, { merge: true });
+      // 🔧 ULTRA SAFE SAVE: Try multiple methods
+      console.log('SAVE: Attempting safe save to Firebase...');
       
-      console.log('SAVE: setDoc completed successfully');
+      try {
+        // Method 1: Use setDoc with complete replacement
+        await setDoc(docRef, firebaseData);
+        console.log('SAVE: ✅ setDoc completed successfully');
+      } catch (setDocError) {
+        console.error('SAVE: ❌ setDoc failed, trying merge method:', setDocError);
+        
+        try {
+          // Method 2: Use setDoc with merge
+          await setDoc(docRef, firebaseData, { merge: true });
+          console.log('SAVE: ✅ setDoc with merge completed successfully');
+        } catch (mergeError) {
+          console.error('SAVE: ❌ setDoc with merge also failed:', mergeError);
+          throw mergeError;
+        }
+      }
       
       // Verificar que los datos se guardaron haciendo una re-lectura rápida
       console.log('SAVE: Verifying data was saved correctly...');
@@ -289,20 +391,30 @@ export class FirebaseDatabaseManager {
       if (savedDoc.exists()) {
         const savedData = savedDoc.data();
         const savedAssignments = savedData.layout?.positions?.filter((p: any) => p.employeeId) || [];
-        console.log('SAVE: Verification - saved assignments count:', savedAssignments.length);
-        console.log('SAVE: Verification - saved assignments:', savedAssignments.map((p: any) => ({
+        console.log('SAVE: ✅ Verification - saved assignments count:', savedAssignments.length);
+        console.log('SAVE: ✅ Verification - saved assignments:', savedAssignments.map((p: any) => ({
           id: p.id,
           number: p.number,
           deskName: p.deskName,
           employeeId: p.employeeId
         })));
       } else {
-        console.error('SAVE: Document does not exist after saving!');
+        console.error('SAVE: ❌ Document does not exist after saving!');
       }
       
-      console.log('SAVE: State saved to Firebase successfully');
+      console.log('SAVE: ✅ State saved to Firebase successfully');
     } catch (error) {
-      console.error('SAVE: Error saving to Firebase:', error);
+      console.error('SAVE: ❌ Error saving to Firebase:', error);
+      
+      // 🆘 EMERGENCY: Log detailed error information
+      if (error instanceof Error) {
+        console.error('SAVE: Error name:', error.name);
+        console.error('SAVE: Error message:', error.message);
+        if ('code' in error) {
+          console.error('SAVE: Firebase error code:', (error as any).code);
+        }
+      }
+      
       throw error;
     }
   }
