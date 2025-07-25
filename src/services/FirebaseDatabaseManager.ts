@@ -44,19 +44,41 @@ export class FirebaseDatabaseManager {
   private initializeFirebaseListener(): void {
     const docRef = doc(db, COLLECTION_NAME, DOCUMENT_ID);
     
+    console.log('🔄 SYNC: Initializing Firebase listener...');
+    console.log('🔄 SYNC: Document path:', `${COLLECTION_NAME}/${DOCUMENT_ID}`);
+    
     this.unsubscribe = onSnapshot(docRef, (doc) => {
-      console.log('Firebase document change detected');
+      const timestamp = new Date().toLocaleTimeString();
+      console.log(`🔄 SYNC [${timestamp}]: Firebase document change detected`);
+      console.log('🔄 SYNC: Document exists:', doc.exists());
+      console.log('🔄 SYNC: Document metadata:', {
+        fromCache: doc.metadata.fromCache,
+        hasPendingWrites: doc.metadata.hasPendingWrites
+      });
+      
       if (doc.exists()) {
         const data = doc.data();
-        console.log('Firebase data received:', {
+        console.log('🔄 SYNC: Firebase data received:', {
           employeesCount: data.employees?.length || 0,
           positionsCount: data.layout?.positions?.length || 0,
-          assignedPositions: data.layout?.positions?.filter((p: any) => p.employeeId).length || 0
+          assignedPositions: data.layout?.positions?.filter((p: any) => p.employeeId).length || 0,
+          lastUpdated: data.lastUpdated?.toDate?.()?.toLocaleString() || 'No timestamp'
         });
+        
+        // 🔄 SYNC: Log detailed employee data
+        if (data.employees && data.employees.length > 0) {
+          console.log('🔄 SYNC: Employee details from Firebase:', data.employees.map((emp: any) => ({
+            id: emp.id,
+            name: emp.name,
+            position: emp.position,
+            department: emp.department,
+            updatedAt: emp.updatedAt?.toDate?.()?.toLocaleString() || 'No timestamp'
+          })));
+        }
         
         // Log de posiciones asignadas
         const assignedPositions = data.layout?.positions?.filter((p: any) => p.employeeId) || [];
-        console.log('Assigned positions from Firebase:', assignedPositions.map((p: any) => ({
+        console.log('🔄 SYNC: Assigned positions from Firebase:', assignedPositions.map((p: any) => ({
           deskName: p.deskName || p.number,
           employeeId: p.employeeId,
           isOccupied: p.isOccupied
@@ -66,17 +88,26 @@ export class FirebaseDatabaseManager {
         
         // Verificar estado después de conversión
         const stateAssigned = this.state.layout.positions.filter(p => p.employeeId);
-        console.log('Assigned positions after conversion:', stateAssigned.map(p => ({
+        console.log('🔄 SYNC: Assigned positions after conversion:', stateAssigned.map(p => ({
           deskName: p.deskName || p.number,
           employeeId: p.employeeId,
           isOccupied: p.isOccupied
         })));
+        
+        // 🔄 SYNC: Log final employee count after conversion
+        console.log(`🔄 SYNC: Final employee count after conversion: ${this.state.employees.length}`);
+        console.log('🔄 SYNC: Final employees list:', this.state.employees.map(emp => ({
+          id: emp.id,
+          name: emp.name,
+          position: emp.position,
+          department: emp.department
+        })));
       } else {
-        console.log('Firebase document does not exist, creating initial document');
+        console.log('🔄 SYNC: Firebase document does not exist, creating initial document');
         // Si no existe el documento, crear uno inicial
         this.initializeFirebaseDocument();
       }
-      console.log('Notifying listeners of state change');
+      console.log('🔄 SYNC: Notifying listeners of state change');
       this.notifyListeners();
     }, (error) => {
       console.error('Error listening to Firebase changes:', error);
@@ -498,7 +529,55 @@ export class FirebaseDatabaseManager {
       }))
     );
     console.log('Active listeners:', this.listeners.length);
+    console.log('Firebase connection status:', this.unsubscribe ? 'Connected' : 'Disconnected');
     console.log('==================');
+  }
+
+  // 🆘 EMERGENCY SYNC: Método de diagnóstico y reparación en tiempo real
+  public async emergencySync(): Promise<void> {
+    console.log('🆘 EMERGENCY SYNC: Starting emergency synchronization...');
+    
+    try {
+      // 1. Verificar conexión actual
+      console.log('🆘 Step 1: Checking current connection...');
+      this.debugSync();
+      
+      // 2. Forzar reconexión
+      console.log('🆘 Step 2: Forcing reconnection...');
+      if (this.unsubscribe) {
+        this.unsubscribe();
+        console.log('🆘 Previous listener disconnected');
+      }
+      
+      // 3. Re-inicializar listener
+      console.log('🆘 Step 3: Re-initializing Firebase listener...');
+      this.initializeFirebaseListener();
+      
+      // 4. Forzar lectura directa
+      console.log('🆘 Step 4: Force reading from Firebase...');
+      const docRef = doc(db, COLLECTION_NAME, DOCUMENT_ID);
+      const docSnap = await getDoc(docRef);
+      
+      if (docSnap.exists()) {
+        const data = docSnap.data();
+        console.log('🆘 Direct read successful:', {
+          employeesCount: data.employees?.length || 0,
+          assignedPositions: data.layout?.positions?.filter((p: any) => p.employeeId)?.length || 0,
+          lastUpdated: data.lastUpdated?.toDate?.()?.toLocaleString() || 'No timestamp'
+        });
+        
+        // Forzar actualización del estado
+        this.state = this.convertFirebaseToState(data);
+        this.notifyListeners();
+        
+        console.log('🆘 EMERGENCY SYNC: Successfully completed!');
+      } else {
+        console.error('🆘 EMERGENCY SYNC: Document does not exist!');
+      }
+      
+    } catch (error) {
+      console.error('🆘 EMERGENCY SYNC: Failed with error:', error);
+    }
   }
 
   // Método para forzar re-sincronización

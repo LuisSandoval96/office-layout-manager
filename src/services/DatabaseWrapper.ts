@@ -41,6 +41,7 @@ interface IDatabaseManager {
   fixCorruptedEmployeeData?(): Promise<boolean>; // Método para corregir datos corruptos
   debugSync?(): void; // Método de debug
   forceSyncFromFirebase?(): Promise<void>; // Método para forzar sincronización
+  emergencySync?(): Promise<void>; // 🆘 Método de emergencia para sincronización
   
   subscribe(listener: (state: ApplicationState) => void): () => void;
   exportData(): ApplicationState;
@@ -175,6 +176,14 @@ class DatabaseManagerWrapper implements IDatabaseManager {
       return this.manager.forceSyncFromFirebase();
     } else {
       throw new Error('forceSyncFromFirebase not available in current database manager');
+    }
+  }
+
+  async emergencySync(): Promise<void> {
+    if ('emergencySync' in this.manager && typeof this.manager.emergencySync === 'function') {
+      return this.manager.emergencySync();
+    } else {
+      console.log('emergencySync not available in current database manager');
     }
   }
 }

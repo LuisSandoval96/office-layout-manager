@@ -39,9 +39,31 @@ function App() {
   useEffect(() => {
     loadData();
     
+    // 🆘 EXPOSE EMERGENCY SYNC TO CONSOLE
+    (window as any).emergencySync = () => {
+      console.log('🆘 Emergency sync triggered from console...');
+      db.emergencySync();
+    };
+    
+    (window as any).debugSync = () => {
+      console.log('🔍 Debug sync triggered from console...');
+      db.debugSync();
+    };
+    
+    (window as any).forceRefresh = () => {
+      console.log('🔄 Force refresh triggered from console...');
+      loadData();
+    };
+    
+    console.log('🆘 Emergency tools available in console:');
+    console.log('   - emergencySync() - Force reconnect and sync');
+    console.log('   - debugSync() - Show current sync status');
+    console.log('   - forceRefresh() - Force data reload');
+    
     // Suscribirse a cambios en tiempo real
     const unsubscribe = db.subscribe((state) => {
-      console.log('Firebase state update received:', {
+      const timestamp = new Date().toLocaleTimeString();
+      console.log(`🔄 [${timestamp}] Firebase state update received:`, {
         employeesCount: state.employees.length,
         positionsCount: state.layout.positions.length,
         occupiedPositions: state.layout.positions.filter(p => p.employeeId).length
